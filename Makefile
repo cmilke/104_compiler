@@ -1,3 +1,5 @@
+SOURCE   = oc.cpp auxlib.cpp auxlib.h stringset.cpp stringset.h
+EXTRA    = README Makefile
 OBJECTS  = auxlib.o stringset.o
 COMPILE  = g++ -g -O0 -Wall -Wextra -std=gnu++14 -o
 PRODUCTS = *.str 
@@ -11,6 +13,11 @@ clean:
 
 spotless: clean
 	-rm oc 2> /dev/null
+
+ci: $(SOURCE) $(EXTRA)
+	git add $(SOURCE) $(EXTRA)
+	git commit -am $(m)
+	git push origin master
 
 deps: $(OBJECTS)
 
