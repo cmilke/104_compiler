@@ -16,10 +16,13 @@ spotless: clean
 
 ci: $(SOURCE) $(EXTRA)
 	git add $(SOURCE) $(EXTRA)
-	git commit -am $(m)
+	git commit -am "$(m)"
 	git push origin master
 
 deps: $(OBJECTS)
+
+submit: $(SOURCE) $(EXTRA)
+	submit cmps104a-wm.s16 asg1 $(SOURCE) $(EXTRA)
 
 auxlib.o: auxlib.cpp auxlib.h
 	$(COMPILE) auxlib.o -c auxlib.cpp
