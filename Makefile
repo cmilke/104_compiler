@@ -4,12 +4,12 @@ HEADERS  = auxlib.h lyutils.h astree.h stringset.h tokens.h
 FLEXSRC  = scanner.l
 BISONSRC = parser.y
 
-LEXHDR   = yylex.h
-LEXCPP   = yylex.cpp
+LEXH     = yylex.h
+LEXC     = yylex.cc
 PARSEHDR = yyparse.h
 PARSECPP = yyparse.cpp
 PARSEOUT = yyparse.output
-F_B_OUT  = ${LEXHDR} ${LEXCPP} ${PARSEHDR} ${PARSECPP} ${PARSEOUT}
+F_B_OUT  = ${LEXH} ${LEXC} ${PARSEHDR} ${PARSECPP} ${PARSEOUT}
 
 EXTRA    = README Makefile
 SOURCE   = ${CPPFILES} ${HEADERS} ${FLEXSRC} ${BISONSRC} ${EXTRA}
@@ -18,7 +18,7 @@ OBJECTS  = auxlib.o lyutils.o astree.o stringset.o yylex.o yyparse.o
 PRODUCTS = *.str ${F_B_OUT}
 
 COMPILE  = g++ -g -O0 -Wall -Wextra -std=gnu++14 -o
-FLEX     = flex --header-file=${LEXHDR} --outfile=${LEXCPP}
+FLEX     = flex --header-file=${LEXH} --outfile=${LEXC}
 BISON    = bison --defines=${PARSEHDR} --output=${PARSECPP}
 
 
@@ -35,7 +35,7 @@ spotless: clean
 
 ci: ${SOURCE}
 	git add ${SOURCE}
-	git commit -am "${m}"
+	git commit -am "${m}" #call with make ci m='blablabla'
 	git push origin master
 
 deps: ${OBJECTS}
@@ -44,12 +44,12 @@ submit: ${SOURCE}
 	submit cmps104a-wm.s16 asg2 ${SOURCE}
 
 
-${LEXHDR}: ${FLEXSRC}
+${LEXH}: ${FLEXSRC}
 	${FLEX} ${FLEXSRC}
 
-${LEXCPP}: ${LEXHDR}
+${LEXC}: ${LEXH}
 
-yylex.o: ${LEXCPP} ${LEXHDR}
+yylex.o: ${LEXC} ${LEXH}
 	${COMPILE} $@ -c $< -Wno-sign-compare
 	
 
@@ -65,7 +65,7 @@ yyparse.o: ${PARSECPP} lyutils.h astree.h
 astree.o: astree.cpp astree.h stringset.h lyutils.h
 	${COMPILE} $@ -c $<
 
-lyutils.o: lyutils.cpp lyutils.h auxlib.h astree.h ${LEXHDR} ${PARSEHDR}
+lyutils.o: lyutils.cpp lyutils.h auxlib.h astree.h ${LEXH} ${PARSEHDR}
 	${COMPILE} $@ -c $<
 
 %.o: %.cpp %.h
