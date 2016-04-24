@@ -19,56 +19,13 @@ using namespace std;
 #include <wait.h>
 
 #include "auxlib.h"
-#include "stringset.h"
+#include "yylex.h"
+#include "lyutils.h"
 
 
 
 const string CPP = "/usr/bin/cpp";
 constexpr size_t LINESIZE = 1024;
-
-
-
-// Chomp the last character from a buffer if it is delim.
-void chomp (char* string, char delim) {
-    size_t len = strlen (string);
-    if (len == 0) return;
-    char* nlpos = string + len - 1;
-    if (*nlpos == delim) *nlpos = '\0';
-}
-
-
-
-// Run cpp against the lines of the file.
-void cpplines (FILE* pipe, string filename) {
-    int linenr = 1;
-    //char inputname[LINESIZE];
-    //strcpy (inputname, filename);
-    for (;;) {
-        char buffer[LINESIZE];
-        char* fgets_rc = fgets (buffer, LINESIZE, pipe);
-        if (fgets_rc == NULL) break;
-        chomp (buffer, '\n');
-        __debugprintf('a', "oc.cpp", 50, "cpplines", 
-                "%s:line %d: [%s]\n", filename.c_str(), linenr, buffer);
-        // http://gcc.gnu.org/onlinedocs/cpp/Preprocessor-Output.html
-        char* header_name = NULL;
-        int sscanf_rc = sscanf (buffer, "# %d \"%[^\"]\"", &linenr, header_name);
-        if (sscanf_rc == 2) {
-            //printf ("DIRECTIVE: line %d file \"%s\"\n", linenr, header_name);
-            continue;
-        }
-        char* savepos = NULL;
-        char* bufptr = buffer;
-        for (int tokenct = 1;; ++tokenct) {
-            char* token = strtok_r (bufptr, " \t\n", &savepos);
-            bufptr = NULL;
-            if (token == NULL) break;
-            //printf ("token %d.%d: [%s]\n", linenr, tokenct, token);
-            intern_stringset(token);
-        }
-        ++linenr;
-    }
-}
 
 
 
@@ -95,6 +52,23 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
 
 
 
+// Run cpp against the lines of the file.
+void cpplines (string filename) {
+    printf("\n\n");
+    for (;;) {
+        int token = yylex();
+        if (token == YYEOF) break;
+
+        __debugprintf('a', "oc.cpp", 50, "cpplines", 
+                "%s: [%s]\n", filename.c_str(), token);
+
+        printf("%d ", token);
+    }
+    printf("\n\n");
+}
+
+
+
 int main (int argc, char** argv) {
     set_execname (argv[0]);
     vector<string> files;
@@ -106,24 +80,24 @@ int main (int argc, char** argv) {
         if ( cpp_opts.empty() ) command = CPP + " " + filename;
         else command = CPP + " " + "-D" + cpp_opts + " " + filename;
         printf ("command=\"%s\"\n", command.c_str());
-        FILE* pipe = popen (command.c_str(), "r");
-        if (pipe == NULL) {
+        yyin = popen (command.c_str(), "r");
+        if (yyin == NULL) {
             syserrprintf (command.c_str());
         }else {
-            cpplines (pipe, filename.c_str());
-            int pclose_rc = pclose (pipe);
+            cpplines (filename.c_str());
+            int pclose_rc = pclose (yyin);
             eprint_status (command.c_str(), pclose_rc);
             if (pclose_rc != 0) set_exitstatus (EXIT_FAILURE);
         }
 
-        int delimit_i = filename.rfind(".");
+        /*int delimit_i = filename.rfind(".");
         int delimit_j = filename.rfind("/");
         string output_orig = filename.substr(0,delimit_i) + ".str";
         string output_name = string(output_orig).substr(delimit_j+1);
         FILE *output_file;
         output_file = fopen(output_name.c_str(), "w");
         dump_stringset(output_file);
-        fclose(output_file);
+        fclose(output_file);*/
     }
     return get_exitstatus();
 }

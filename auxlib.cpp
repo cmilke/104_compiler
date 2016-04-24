@@ -1,4 +1,3 @@
-// $Id: auxlib.cpp,v 1.3 2015-10-01 18:15:04-07 - - $
 
 #include <assert.h>
 #include <errno.h>
@@ -21,19 +20,16 @@ void set_execname (char* argv0) {
    execname = basename (argv0);
 }
 
-
 const char* get_execname (void) {
    assert (execname != NULL);
    return execname;
 }
-
 
 static void eprint_signal (const char* kind, int signal) {
    eprintf (", %s %d", kind, signal);
    const char* sigstr = strsignal (signal);
    if (sigstr != NULL) fprintf (stderr, " %s", sigstr);
 }
-
 
 void eprint_status (const char* command, int status) {
    if (status == 0) return; 
@@ -56,7 +52,10 @@ void eprint_status (const char* command, int status) {
    eprintf ("\n");
 }
 
-
+int get_exitstatus (void) {
+   return exitstatus;
+}
+
 void veprintf (const char* format, va_list args) {
    assert (execname != NULL);
    assert (format != NULL);
@@ -88,10 +87,6 @@ void syserrprintf (const char* object) {
    errprintf ("%:%s: %s\n", object, strerror (errno));
 }
 
-int get_exitstatus (void) {
-   return exitstatus;
-}
-
 void set_exitstatus (int newexitstatus) {
    if (exitstatus < newexitstatus) exitstatus = newexitstatus;
    DEBUGF ('x', "exitstatus = %d\n", exitstatus);
@@ -108,7 +103,7 @@ void __stubprintf (const char* file, int line, const char* func,
    fflush (NULL);
 }     
 
-
+
 void set_debugflags (const char* flags) {
    debugflags = flags;
    if (strchr (debugflags, '@') != NULL) alldebugflags = true;
@@ -116,11 +111,9 @@ void set_debugflags (const char* flags) {
            debugflags, alldebugflags);
 }
 
-
 bool is_debugflag (char flag) {
    return alldebugflags or strchr (debugflags, flag) != NULL;
 }
-
 
 void __debugprintf (char flag, const char* file, int line,
                     const char* func, const char* format, ...) {
