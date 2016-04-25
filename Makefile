@@ -27,21 +27,23 @@ all: oc
 oc: oc.cpp deps
 	${COMPILE} $@ $< ${OBJECTS} 
 
+deps: ${OBJECTS}
+
+
 clean:
 	-rm ${OBJECTS} ${PRODUCTS} 2> /dev/null
 
 spotless: clean
 	-rm oc 2> /dev/null
 
+
+submit: ${SOURCE} ci
+	submit cmps104a-wm.s16 asg2 ${SOURCE}
+
 ci: ${SOURCE}
 	git add ${SOURCE}
 	git commit -am "${m}" #call with make ci m='blablabla'
 	git push origin master
-
-deps: ${OBJECTS}
-
-submit: ${SOURCE}
-	submit cmps104a-wm.s16 asg2 ${SOURCE}
 
 
 ${LEXH}: ${FLEXSRC}
