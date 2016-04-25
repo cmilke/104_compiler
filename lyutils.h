@@ -35,6 +35,7 @@ void lexer_useraction (void);
 
 astree* new_parseroot (void);
 int yylval_token (int symbol);
+astree* get_newtree(int symbol);
 
 void lexer_include (void);
 

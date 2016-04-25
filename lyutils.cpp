@@ -73,12 +73,21 @@ int yylval_token (int symbol) {
    return symbol;
 }
 
+
+astree* get_newtree(int symbol) {
+   int offset = scan_offset - yyleng;
+   astree* newtree = new astree (symbol, included_filenames.size() - 1,
+                        scan_linenr, offset, yytext);
+   return newtree;
+}
+
+
 astree* new_parseroot (void) {
    yyparse_astree = new astree (TOK_ROOT, 0, 0, 0, "");
    return yyparse_astree;
 }
 
-
+
 void lexer_include (void) {
    lexer_newline();
    char filename[strlen (yytext) + 1];

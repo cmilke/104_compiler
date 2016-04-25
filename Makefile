@@ -15,7 +15,7 @@ EXTRA    = README Makefile
 SOURCE   = ${CPPFILES} ${HEADERS} ${FLEXSRC} ${BISONSRC} ${EXTRA}
 
 OBJECTS  = auxlib.o lyutils.o astree.o stringset.o yylex.o yyparse.o
-PRODUCTS = *.str ${F_B_OUT}
+PRODUCTS = *.str *.tok ${F_B_OUT}
 
 COMPILE  = g++ -g -O0 -Wall -Wextra -std=gnu++14 -o
 FLEX     = flex --header-file=${LEXH} --outfile=${LEXC}

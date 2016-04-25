@@ -1,6 +1,7 @@
 %{
 // $Id: lexer.l,v 1.9 2014-10-09 18:39:47-07 - - $
 #include "tokens.h"
+#include "lyutils.h"
 
 %}
 
@@ -15,9 +16,7 @@
 LETTER          [a-zA-Z_]
 DIGIT           [0-9]
 IDENT           {LETTER}({LETTER}|{DIGIT})*
-MANTISSA        {DIGIT}+\.?{DIGIT}*|\.{DIGIT}+
-EXPONENT        [Ee][+-]?{DIGIT}+
-NUMBER          ({MANTISSA})({EXPONENT})?
+NUMBER          {DIGIT}+
 
 %%
 
@@ -29,9 +28,9 @@ NUMBER          ({MANTISSA})({EXPONENT})?
 "/"             { return '/'; }
 "="             { return '='; }
 ";"             { return ';'; }
-\n              { return '\n'; }
+\n              { lexer_newline(); }
 [ \t]+          { /* Skip whitespace. */ }
-"#".*           { /* Ignore comment. */ }
+"#".*           { lexer_include(); }
 .               { return ERROR; }
 
 %%
