@@ -20,8 +20,8 @@ NUMBER          {DIGIT}+
 
 %%
 
-{IDENT}         { return IDENT; }
-{NUMBER}        { return NUMBER; }
+{IDENT}         { return TOK_IDENT; }
+{NUMBER}        { return TOK_INT; }
 "+"             { return '+'; }
 "-"             { return '-'; }
 "*"             { return '*'; }
@@ -29,7 +29,7 @@ NUMBER          {DIGIT}+
 "="             { return '='; }
 ";"             { return ';'; }
 \n              { lexer_newline(); }
-[ \t]+          { /* Skip whitespace. */ }
+[ \t]+          { lexer_useraction(); }
 "#".*           { lexer_include(); }
 .               { return ERROR; }
 

@@ -30,18 +30,9 @@ const string CPP = "/usr/bin/cpp";
 constexpr size_t LINESIZE = 1024;
 
 
-// Chomp the last character from a buffer if it is delim.
-void chomp (char* string, char delim) {
-    size_t len = strlen (string);
-    if (len == 0) return;
-    char* nlpos = string + len - 1;
-    if (*nlpos == delim) *nlpos = '\0';
-}
-
-
 
 void deal_with_arguments (int argc, char** argv, vector<string> &files, string &cpp_opts) {
-    int lflag = 0;
+    yy_flex_debug = 0;
     int yflag = 0;
 
     int arg = -1;
@@ -49,12 +40,12 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
         switch(arg) {
             case '@': set_debugflags(optarg); break;
             case 'D': cpp_opts = optarg; break;
-            case 'l': lflag = 1; break;
+            case 'l': yy_flex_debug = 1; break;
             case 'y': yflag = 1; break;
         }
     }
-    __debugprintf('b', "oc.cpp", 87, "deal_with_arguments",
-            "l=%d, y=%d\n",lflag,yflag);
+    __debugprintf('b', "oc.cpp", -1, "deal_with_arguments",
+            "l=%d, y=%d\n",yy_flex_debug,yflag);
 
     for(int argi = optind; argi < argc; argi++) {
         files.push_back( string(argv[argi]) );
@@ -65,7 +56,8 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
 
 // Run cpp against the lines of the file.
 void gettokens (string filename, astree* parseroot) {
-    lexer_newfilename ( filename.c_str() );
+    __debugprintf('b', "oc.cpp", -1, "gettokens",
+            "current file = %s\n",filename.c_str());
 
     for (;;) {
         int symbol = yylex();
@@ -77,37 +69,6 @@ void gettokens (string filename, astree* parseroot) {
         adopt1(parseroot, newtree);
     }
 }
-
-
-/*void getstrings (FILE* pipe, string filename) {
-    int linenr = 1;
-    //char inputname[LINESIZE];
-    //strcpy (inputname, filename);
-    for (;;) {
-        char buffer[LINESIZE];
-        char* fgets_rc = fgets (buffer, LINESIZE, pipe);
-        if (fgets_rc == NULL) break;
-        chomp (buffer, '\n');
-        __debugprintf('a', "oc.cpp", 50, "cpplines", 
-                "%s:line %d: [%s]\n", filename.c_str(), linenr, buffer);
-        // http://gcc.gnu.org/onlinedocs/cpp/Preprocessor-Output.html
-        char* header_name = NULL;
-        int sscanf_rc = sscanf (buffer, "# %d \"%[^\"]\"", &linenr, header_name);
-        if (sscanf_rc == 2) {
-            //printf ("DIRECTIVE: line %d file \"%s\"\n", linenr, header_name);
-            continue;
-        }
-        char* savepos = NULL;
-        char* bufptr = buffer;
-        for (int tokenct = 1;; ++tokenct) {
-            char* token = strtok_r (bufptr, " \t\n", &savepos);
-            bufptr = NULL;
-            if (token == NULL) break;
-            //printf ("token %d.%d: [%s]\n", linenr, tokenct, token);
-        }
-        ++linenr;
-    }
-}*/
 
 
 void make_str_file(string filename) {
@@ -151,22 +112,6 @@ int main (int argc, char** argv) {
 
     for (auto filename : files) {
         string command = base_command + filename;
-
-        /*
-        //FIXME: there has to be a better way to
-        //do this than executing cpp twice.
-        FILE* pipe = popen (command.c_str(), "r");
-        if (pipe == NULL) {
-            syserrprintf (command.c_str());
-        }else {
-            getstrings(pipe, filename);
-
-            int pclose_rc = pclose (pipe);
-            eprint_status (command.c_str(), pclose_rc);
-            if (pclose_rc != 0) set_exitstatus (EXIT_FAILURE);
-
-            make_str_file(filename);
-        }*/
 
         yyin = popen (command.c_str(), "r");
         if (yyin == NULL) {
