@@ -15,22 +15,56 @@
 
 LETTER          [a-zA-Z_]
 DIGIT           [0-9]
-IDENT           {LETTER}({LETTER}|{DIGIT})*
+IDENT        {LETTER}({LETTER}|{DIGIT})*
 NUMBER          {DIGIT}+
+MISC            [ !#-&(-/:-@\[-`\{-~]
+ESCAPE          \\[abfnrtv\\'\"?]
+CHAR            '({LETTER}|{DIGIT}|{ESCAPE}|{MISC})'
+STRING          \"({LETTER}|{DIGIT}|{ESCAPE}|{MISC})*\"
 
 %%
-
-{IDENT}         { return TOK_IDENT; }
-{NUMBER}        { return TOK_INT; }
+{STRING}        { return TOKSTRING; }
+{CHAR}          { return TOKCHAR; }
+{IDENT}         { return TOKIDENT; }
+"#".*           { lexer_include(); }
+\n              { lexer_newline(); }
+[ \t]+          { lexer_useraction(); }
+"void"          { return TOKVOID; }
+"bool"          { return TOKBOOL; }
+{NUMBER}        { return TOKINT; }
+"if"            { return TOKIF; }
+"else"          { return TOKELSE; }
+"while"         { return TOKWHILE; }
+"return"        { return TOKRETURN; }
+"struct"        { return TOKSTRUCT; }
+"false"         { return TOKFALSE; }
+"true"          { return TOKTRUE; }
+"null"          { return TOKNULL; }
+"new"           { return TOKNEW; }
+"=="            { return TOKEQ; }
+"!="            { return TOKNE; }
+"<"             { return TOKLT; }
+"<="            { return TOKLE; }
+">"             { return TOKGT; }
+">="            { return TOKGE; }
+"+"             { return TOKPOS; }
+"-"             { return TOKNEG; }
+"[]"            { return TOKNEWARRAY; }
+"ord"           { return TOKORD; }
+"chr"           { return TOKCHR; }
 "+"             { return '+'; }
 "-"             { return '-'; }
 "*"             { return '*'; }
 "/"             { return '/'; }
 "="             { return '='; }
 ";"             { return ';'; }
-\n              { lexer_newline(); }
-[ \t]+          { lexer_useraction(); }
-"#".*           { lexer_include(); }
+"{"             { return '{'; }
+"}"             { return '}'; }
+"["             { return '['; }
+"]"             { return ']'; }
+"("             { return '('; }
+")"             { return ')'; }
+","             { return ','; }
 .               { return ERROR; }
 
 %%
