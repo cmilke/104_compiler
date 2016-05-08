@@ -15,7 +15,7 @@
 
 LETTER          [a-zA-Z_]
 DIGIT           [0-9]
-IDENT        {LETTER}({LETTER}|{DIGIT})*
+IDENT           {LETTER}({LETTER}|{DIGIT})*
 NUMBER          {DIGIT}+
 MISC            [ !#-&(-/:-@\[-`\{-~]
 ESCAPE          \\[abfnrtv\\'\"?]
@@ -23,49 +23,50 @@ CHAR            '({LETTER}|{DIGIT}|{ESCAPE}|{MISC})'
 STRING          \"({LETTER}|{DIGIT}|{ESCAPE}|{MISC})*\"
 
 %%
-{STRING}        { return TOKSTRING; }
-{CHAR}          { return TOKCHAR; }
-{IDENT}         { return TOKIDENT; }
+{STRING}        { return yylval_token(TOKSTRINGCON); }
+{CHAR}          { return yylval_token(TOKCHARCON); }
 "#".*           { lexer_include(); }
 \n              { lexer_newline(); }
 [ \t]+          { lexer_useraction(); }
-"void"          { return TOKVOID; }
-"bool"          { return TOKBOOL; }
-{NUMBER}        { return TOKINT; }
-"if"            { return TOKIF; }
-"else"          { return TOKELSE; }
-"while"         { return TOKWHILE; }
-"return"        { return TOKRETURN; }
-"struct"        { return TOKSTRUCT; }
-"false"         { return TOKFALSE; }
-"true"          { return TOKTRUE; }
-"null"          { return TOKNULL; }
-"new"           { return TOKNEW; }
-"=="            { return TOKEQ; }
-"!="            { return TOKNE; }
-"<"             { return TOKLT; }
-"<="            { return TOKLE; }
-">"             { return TOKGT; }
-">="            { return TOKGE; }
-"+"             { return TOKPOS; }
-"-"             { return TOKNEG; }
-"[]"            { return TOKNEWARRAY; }
-"ord"           { return TOKORD; }
-"chr"           { return TOKCHR; }
-"+"             { return '+'; }
-"-"             { return '-'; }
-"*"             { return '*'; }
-"/"             { return '/'; }
-"="             { return '='; }
-";"             { return ';'; }
-"{"             { return '{'; }
-"}"             { return '}'; }
-"["             { return '['; }
-"]"             { return ']'; }
-"("             { return '('; }
-")"             { return ')'; }
-","             { return ','; }
-.               { return ERROR; }
+"void"          { return yylval_token(TOKVOID); }
+"bool"          { return yylval_token(TOKBOOL); }
+"char"          { return yylval_token(TOKCHAR); }
+"int"           { return yylval_token(TOKINT); }
+"string"        { return yylval_token(TOKSTRING); }
+"struct"        { return yylval_token(TOKSTRUCT); }
+"if"            { return yylval_token(TOKIF); }
+"else"          { return yylval_token(TOKELSE); }
+"while"         { return yylval_token(TOKWHILE); }
+"return"        { return yylval_token(TOKRETURN); }
+"false"         { return yylval_token(TOKFALSE); }
+"true"          { return yylval_token(TOKTRUE); }
+"null"          { return yylval_token(TOKNULL); }
+"new"           { return yylval_token(TOKNEW); }
+"ord"           { return yylval_token(TOKORD); }
+"chr"           { return yylval_token(TOKCHR); }
+{IDENT}         { return yylval_token(TOKIDENT); }
+{NUMBER}        { return yylval_token(TOKINTCON); }
+"=="            { return yylval_token(TOKEQ); }
+"!="            { return yylval_token(TOKNE); }
+"<"             { return yylval_token(TOKLT); }
+"<="            { return yylval_token(TOKLE); }
+">"             { return yylval_token(TOKGT); }
+">="            { return yylval_token(TOKGE); }
+"[]"            { return yylval_token(TOKNEWARRAY); }
+"+"             { return yylval_token('+'); }
+"-"             { return yylval_token('-'); }
+"*"             { return yylval_token('*'); }
+"/"             { return yylval_token('/'); }
+"="             { return yylval_token('='); }
+";"             { return yylval_token(';'); }
+"{"             { return yylval_token('{'); }
+"}"             { return yylval_token('}'); }
+"["             { return yylval_token('['); }
+"]"             { return yylval_token(']'); }
+"("             { return yylval_token('('); }
+")"             { return yylval_token(')'); }
+","             { return yylval_token(','); }
+.               { return yylval_token(ERROR); }
 
 %%
 

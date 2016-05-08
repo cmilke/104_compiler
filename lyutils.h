@@ -40,6 +40,15 @@ astree* get_newtree(int symbol);
 void lexer_include (void);
 
 typedef astree* astree_pointer;
+
+
+void dprint (string dtype, astree* d1);
+void dprint (string dtype, astree* d1, astree* d2);
+void dprint (string dtype, astree* d1, astree* d2, astree* d3);
+void dprint (string dtype, astree* d1, astree* d2, astree* d3, astree* d4);
+void dprint (string dtype, astree* d1, astree* d2, astree* d3, astree* d4, astree* d5);
+
+
 #define YYSTYPE astree_pointer
 #include "yyparse.h"
 

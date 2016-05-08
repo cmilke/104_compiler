@@ -128,3 +128,12 @@ void __debugprintf (char flag, const char* file, int line,
    fflush (NULL);
 }
 
+void __dprintf (char flag, const char* format, ...) {
+   va_list args;
+   if (not is_debugflag (flag)) return;
+   fflush (NULL);
+   va_start (args, format);
+   vfprintf (stdout, format, args);
+   va_end (args);
+   fflush (NULL);
+}

@@ -33,7 +33,7 @@ constexpr size_t LINESIZE = 1024;
 
 void deal_with_arguments (int argc, char** argv, vector<string> &files, string &cpp_opts) {
     yy_flex_debug = 0;
-    int yflag = 0;
+    yydebug = 0;
 
     int arg = -1;
     while ( (arg = getopt(argc, argv, "@:D:ly")) != -1 ){
@@ -41,11 +41,11 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
             case '@': set_debugflags(optarg); break;
             case 'D': cpp_opts = optarg; break;
             case 'l': yy_flex_debug = 1; break;
-            case 'y': yflag = 1; break;
+            case 'y': yydebug = 1; break;
         }
     }
     __debugprintf('b', "oc.cpp", -1, "deal_with_arguments",
-            "l=%d, y=%d\n",yy_flex_debug,yflag);
+            "l=%d, y=%d\n",yy_flex_debug,yydebug);
 
     for(int argi = optind; argi < argc; argi++) {
         files.push_back( string(argv[argi]) );
@@ -55,7 +55,7 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
 
 
 // Run cpp against the lines of the file.
-void gettokens (string filename, astree* parseroot) {
+/*void gettokens (string filename, astree* parseroot) {
     __debugprintf('b', "oc.cpp", -1, "gettokens",
             "current file = %s\n",filename.c_str());
 
@@ -68,37 +68,44 @@ void gettokens (string filename, astree* parseroot) {
         intern_stringset(yytext);
         adopt1(parseroot, newtree);
     }
-}
+}*/
+
+void depth_first_print(FILE* tok_f, FILE* ast_f, int depth, astree* root) {
+    fprintf (tok_f, "%2ld  %02ld.%03ld  %3d  %-15s  (%s)\n",
+            root->filenr, root->linenr, root->offset, root->symbol,
+            get_yytname(root->symbol), root->lexinfo->c_str());
 
 
-void make_str_file(string filename) {
-    int delimit_i = filename.rfind(".");
-    int delimit_j = filename.rfind("/");
-    string output_orig = filename.substr(0,delimit_i) + ".str";
-    string output_name = string(output_orig).substr(delimit_j+1);
+    for(int indentI = 0; indentI < depth; indentI++) fprintf(ast_f, "|    ");
+    fprintf(ast_f, "%s  \"%s\"  %ld.%ld.%ld\n",
+            get_yytname(root->symbol), root->lexinfo->c_str(),
+            root->filenr, root->linenr, root->offset);
 
-    FILE *output_file;
-    output_file = fopen(output_name.c_str(), "w");
-    dump_stringset(output_file);
-    fclose(output_file);
-}
-
-
-void make_tok_file(string filename, astree* parseroot) {
-    int delimit_i = filename.rfind(".");
-    int delimit_j = filename.rfind("/");
-    string output_orig = filename.substr(0,delimit_i) + ".tok";
-    string output_name = string(output_orig).substr(delimit_j+1);
-
-    FILE *output_file;
-    output_file = fopen(output_name.c_str(), "w");
-    for (auto tree : parseroot->children) {
-        fprintf (output_file, "%2ld  %02ld.%03ld  %3d  %-15s  (%s)\n",
-                tree->filenr, tree->linenr, tree->offset, tree->symbol,
-                get_yytname(tree->symbol), tree->lexinfo->c_str());
+    for(auto tree : root->children) {
+        depth_first_print(tok_f, ast_f, depth+1, tree);
     }
-    fclose(output_file);
 }
+
+void make_output_files(string filename) {
+    int delimit_i = filename.rfind(".");
+    int delimit_j = filename.rfind("/");
+    string output_base = filename.substr(0,delimit_i).substr(delimit_j+1);
+    string output_name_str = output_base + ".str";
+    string output_name_tok = output_base + ".tok";
+    string output_name_ast = output_base + ".ast";
+
+
+    FILE *str_f = fopen(output_name_str.c_str(), "w");
+    dump_stringset(str_f);
+    fclose(str_f);
+
+    FILE *tok_f = fopen(output_name_tok.c_str(), "w");
+    FILE *ast_f = fopen(output_name_ast.c_str(), "w");
+    depth_first_print(tok_f, ast_f, 0, yyparse_astree);
+    fclose(tok_f);
+    fclose(ast_f);
+}
+
 
 
 int main (int argc, char** argv) {
@@ -117,15 +124,13 @@ int main (int argc, char** argv) {
         if (yyin == NULL) {
             syserrprintf (command.c_str());
         }else {
-            astree* parseroot = new_parseroot();
-            gettokens(filename.c_str(), parseroot);
+            yyparse();
 
             int pclose_rc = pclose (yyin);
             eprint_status (command.c_str(), pclose_rc);
             if (pclose_rc != 0) set_exitstatus (EXIT_FAILURE);
 
-            make_tok_file(filename, parseroot);
-            make_str_file(filename);
+            make_output_files(filename);
         }
 
     }

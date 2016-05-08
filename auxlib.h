@@ -84,6 +84,8 @@ bool is_debugflag (char flag);
 // Generate debugging code.
 void __debugprintf (char flag, const char* file, int line,
                     const char* func, const char* format, ...);
+
+void __dprintf (char flag, const char* format, ...);
 #define DEBUGF(FLAG,...) \
         __debugprintf (FLAG, __FILE__, __LINE__, __func__, \
                        __VA_ARGS__)

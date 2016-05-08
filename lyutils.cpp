@@ -83,7 +83,7 @@ astree* get_newtree(int symbol) {
 
 
 astree* new_parseroot (void) {
-   yyparse_astree = new astree (TOK_ROOT, 0, 0, 0, "");
+   yyparse_astree = new astree (TOK_ROOT, 0, 0, 0, "TREE_ROOT");
    return yyparse_astree;
 }
 
@@ -106,3 +106,44 @@ void lexer_include (void) {
    }
 }
 
+
+void dprint (string dtype, astree* d1) {
+    __dprintf('y', "type = %s, s1 = %s\n",
+        dtype.c_str(),
+        d1->lexinfo->c_str()); 
+}
+
+void dprint (string dtype, astree* d1, astree* d2) {
+    __dprintf('y', "type = %s, s1 = %s, s2 = %s\n",
+        dtype.c_str(),
+        d1->lexinfo->c_str(),
+        d2->lexinfo->c_str() ); 
+}
+
+void dprint (string dtype, astree* d1, astree* d2, astree* d3) {
+    __dprintf('y', "type = %s, s1 = %s, s2 = %s, s3 = %s\n",
+        dtype.c_str(),
+        d1->lexinfo->c_str(),
+        d2->lexinfo->c_str(),
+        d3->lexinfo->c_str()); 
+}
+
+void dprint (string dtype, astree* d1, astree* d2, astree* d3, astree* d4) {
+    __dprintf('y', "type = %s, s1 = %s, s2 = %s, s3 = %s, s4 = %s\n",
+        dtype.c_str(),
+        d1->lexinfo->c_str(),
+        d2->lexinfo->c_str(),
+        d3->lexinfo->c_str(),
+        d4->lexinfo->c_str() ); 
+}
+
+void dprint (string dtype, astree* d1, astree* d2,
+             astree* d3, astree* d4, astree* d5) {
+    __dprintf('y', "type = %s, s1 = %s, s2 = %s, s3 = %s, s4 = %s, s5 = %s\n",
+        dtype.c_str(),
+        d1->lexinfo->c_str(),
+        d2->lexinfo->c_str(),
+        d3->lexinfo->c_str(),
+        d4->lexinfo->c_str(),
+        d5->lexinfo->c_str() ); 
+}
