@@ -116,6 +116,32 @@ astree* create_return(astree* tok_return, astree* semicolon) {
 
 
 
+astree* create_allocator_ident(astree* tok_new, astree* tok_ident, astree* lparen, astree* rparen) {
+    free_ast2(lparen,rparen);
+    tok_ident->symbol = TOK_TYPEID;
+    adopt1(tok_new,tok_ident);
+    return tok_new;
+}
+
+
+astree* create_allocator_string(astree* tok_new, astree* tok_string, astree* lparen, astree* rparen) {
+    free_ast2(lparen,rparen);
+    tok_new->symbol = TOK_NEWSTRING;
+    adopt1(tok_new,tok_string);
+    return tok_new;
+}
+
+
+astree* create_allocator_array(astree* tok_new, astree* tok_basetype, astree* lbracket, 
+                               astree* expr, astree* rbracket) {
+
+    free_ast2(lbracket,rbracket);
+    tok_new->symbol = TOK_NEWARRAY;
+    adopt2(tok_new,tok_basetype,expr);
+    return tok_new;
+}
+
+
 %}
 
 %debug
@@ -134,7 +160,7 @@ astree* create_return(astree* tok_return, astree* semicolon) {
 %token TOK_BLOCK TOK_CALL TOK_IFELSE TOK_DECLID TOK_PARAMLIST
 %token TOK_POS TOK_NEG TOK_NEWARRAY TOK_TYPEID TOK_FIELD
 %token TOK_ORD TOK_CHR TOK_ROOT TOK_FUNCTION TOK_TEMP
-%token TOK_VARDECL TOK_RETURNVOID
+%token TOK_VARDECL TOK_RETURNVOID TOK_NEWSTRING
 
 %right TOK_IF TOK_ELSE
 %right '='
@@ -222,11 +248,13 @@ expr        : binop                                             { $$=$1; }
             | unop                                              { $$=$1; }
             | allocator                                         { $$=$1; }
             | call                                              { $$=$1; }
-            | '(' expr ')'                                      {        }
+            | '(' expr ')'                                      { free_ast2($1,$3); $$ = $2; }
             | variable                                          { $$=$1; }
             | constant                                          { $$=$1; }
             ;
-allocator   :
+allocator   : TOK_NEW TOK_IDENT '(' ')'                         { $$=create_allocator_ident($1,$2,$3,$4); }
+            | TOK_NEW TOK_STRING '(' ')'                        { $$=create_allocator_string($1,$2,$3,$4); }
+            | TOK_NEW basetype '[' expr ']'                     { $$=create_allocator_array($1,$2,$3,$4,$5); }
             ;
 call_args   : ',' expr | ',' expr call_args
             ;
@@ -243,19 +271,6 @@ constant    : TOK_INTCON        { $$=$1; }
             | TOK_FALSE         { $$=$1; }
             | TOK_NULL          { $$=$1; }
             ;
-         
-
-
-/*token   : '(' | ')' | '[' | ']' | '{' | '}' | ';' | ',' | '.'
-        | '=' | '+' | '-' | '*' | '/' | '%' | '!'
-        | TOK_VOID | TOK_BOOL | TOK_CHAR | TOK_INT | TOK_STRING
-        | TOK_IF | TOK_ELSE | TOK_WHILE | TOK_RETURN | TOK_STRUCT
-        | TOK_FALSE | TOK_TRUE | TOK_NULL | TOK_NEW | TOK_ARRAY | TOK_NEWARRAY
-        | TOK_EQ | TOK_NE | TOK_LT | TOK_LE | TOK_GT | TOK_GE
-        | TOK_IDENT | TOK_INTCON | TOK_CHARCON | TOK_STRINGCON
-        | TOK_ORD | TOK_CHR | TOK_ROOT | TOK_NEG
-        ;*/
-
 %%
 
 
