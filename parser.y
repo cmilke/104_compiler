@@ -169,7 +169,7 @@ astree* create_call(astree* tok_ident, astree* lparen, astree* call_args, astree
 %token TOK_BLOCK TOK_CALL TOK_IFELSE TOK_DECLID TOK_PARAMLIST
 %token TOK_POS TOK_NEG TOK_NEWARRAY TOK_TYPEID TOK_FIELD
 %token TOK_ORD TOK_CHR TOK_ROOT TOK_FUNCTION TOK_TEMP
-%token TOK_VARDECL TOK_RETURNVOID TOK_NEWSTRING
+%token TOK_VARDECL TOK_RETURNVOID TOK_NEWSTRING TOK_ERROR
 
 %right TOK_IF TOK_ELSE
 %right '='
@@ -187,6 +187,8 @@ program     : body                                              { yyparse_astree
 body        : body structdef                                    { $$ = adopt1($1, $2); }
             | body function                                     { $$ = adopt1($1, $2); }
             | body statement                                    { $$ = adopt1($1, $2); }
+            | body TOK_ERROR '}'                                { $$ = $1; }
+            | body TOK_ERROR ';'                                { $$ = $1; }
             | /*nothing*/                                       { $$ = new_treeroot(TOK_ROOT, "PROGRAM_ROOT"); }
             ;
 structdef   : TOK_STRUCT TOK_IDENT '{' fielddecl '}'            { $$ = create_structdef($1,$2,$3,$4,$5); }
