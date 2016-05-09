@@ -79,7 +79,11 @@ void yyprint (FILE* outfile, unsigned short toknum,
     fflush (NULL);
 }
 
-
+void transfer_children_and_die (astree* oldparent, astree* newparent) {
+    newparent->children = oldparent->children;
+    delete oldparent;
+}
+
 void free_ast (astree* root) {
     while (not root->children.empty()) {
         astree* child = root->children.back();

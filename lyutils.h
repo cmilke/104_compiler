@@ -34,6 +34,7 @@ void lexer_setecho (bool echoflag);
 void lexer_useraction (void);
 
 astree* new_parseroot (void);
+astree* new_treeroot (int symbol, string lexicalinfo);
 int yylval_token (int symbol);
 astree* get_newtree(int symbol);
 

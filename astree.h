@@ -32,6 +32,9 @@ void yyprint (FILE* outfile, unsigned short toknum,
               astree* yyvaluep);
 
 // Recursively free an astree.
+void transfer_children_and_die (astree* oldparent, astree* newparent);
+
+// Recursively free an astree.
 void free_ast (astree* tree);
 
 // Recursively free two astrees.

@@ -88,6 +88,12 @@ astree* new_parseroot (void) {
 }
 
 
+astree* new_treeroot (int symbol, string lexicalinfo) {
+   astree* newroot = new astree (symbol, 0, 0, 0, lexicalinfo.c_str());
+   return newroot;
+}
+
+
 void lexer_include (void) {
    lexer_newline();
    char filename[strlen (yytext) + 1];
