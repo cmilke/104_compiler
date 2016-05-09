@@ -1,5 +1,5 @@
 CPPFILES = oc.cpp auxlib.cpp lyutils.cpp astree.cpp stringset.cpp
-HEADERS  = auxlib.h lyutils.h astree.h stringset.h tokens.h
+HEADERS  = auxlib.h lyutils.h astree.h stringset.h
 
 FLEXSRC  = scanner.l
 BISONSRC = parser.y
