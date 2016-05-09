@@ -142,6 +142,15 @@ astree* create_allocator_array(astree* tok_new, astree* tok_basetype, astree* lb
 }
 
 
+astree* create_call(astree* tok_ident, astree* lparen, astree* call_args, astree* rparen) {
+    free_ast(rparen);
+    lparen->symbol = TOK_CALL;
+    adopt1(lparen,tok_ident);
+    transfer_children_and_die(call_args,lparen);
+    return lparen;
+}
+
+
 %}
 
 %debug
@@ -256,20 +265,22 @@ allocator   : TOK_NEW TOK_IDENT '(' ')'                         { $$=create_allo
             | TOK_NEW TOK_STRING '(' ')'                        { $$=create_allocator_string($1,$2,$3,$4); }
             | TOK_NEW basetype '[' expr ']'                     { $$=create_allocator_array($1,$2,$3,$4,$5); }
             ;
-call_args   : ',' expr | ',' expr call_args
+call_args   : call_args expr                                    { $$=adopt1($1,$2); }
+            | call_args ',' expr                                { free_ast($2); $$=adopt1($1,$3); }
+            | /*nothing*/                                       { $$=new_treeroot(TOK_TEMP,"TEMP CALL ROOT"); }
             ;
-call        : TOK_IDENT '(' ')' 
-            | TOK_IDENT '(' expr ')' 
-            | TOK_IDENT '(' expr call_args ')'
+call        : TOK_IDENT '(' call_args ')'                       { $$=create_call($1,$2,$3,$4); }
             ;
-variable    : TOK_IDENT         { $$=$1; }
+variable    : TOK_IDENT                                         { $$=$1; }
+            | expr '[' expr ']'                                 { free_ast($4); $$=adopt2($2,$1,$3); }
+            | expr '.' TOK_IDENT                                { $3->symbol=TOK_FIELD; $$=adopt2($2,$1,$3); }
             ;
-constant    : TOK_INTCON        { $$=$1; }
-            | TOK_CHARCON       { $$=$1; }
-            | TOK_STRINGCON     { $$=$1; }
-            | TOK_TRUE          { $$=$1; }
-            | TOK_FALSE         { $$=$1; }
-            | TOK_NULL          { $$=$1; }
+constant    : TOK_INTCON                                        { $$=$1; }
+            | TOK_CHARCON                                       { $$=$1; }
+            | TOK_STRINGCON                                     { $$=$1; }
+            | TOK_TRUE                                          { $$=$1; }
+            | TOK_FALSE                                         { $$=$1; }
+            | TOK_NULL                                          { $$=$1; }
             ;
 %%
 

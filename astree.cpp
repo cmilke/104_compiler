@@ -80,7 +80,9 @@ void yyprint (FILE* outfile, unsigned short toknum,
 }
 
 void transfer_children_and_die (astree* oldparent, astree* newparent) {
-    newparent->children = oldparent->children;
+    for( auto child : oldparent->children ) {
+        adopt1(newparent, child);
+    }
     delete oldparent;
 }
 
