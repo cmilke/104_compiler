@@ -88,6 +88,14 @@ astree* create_block(astree* lbrace, astree* block_ops, astree* rbrace) {
 }
 
 
+astree* create_vardecl(astree* identdecl, astree* equals, astree* expr, astree* semicolon) {
+    free_ast(semicolon);
+    equals->symbol = TOK_VARDECL;
+    adopt2(equals,identdecl,expr); 
+    return equals;
+}
+
+
 
 %}
 
@@ -107,6 +115,7 @@ astree* create_block(astree* lbrace, astree* block_ops, astree* rbrace) {
 %token TOK_BLOCK TOK_CALL TOK_IFELSE TOK_DECLID TOK_PARAMLIST
 %token TOK_POS TOK_NEG TOK_NEWARRAY TOK_TYPEID TOK_FIELD
 %token TOK_ORD TOK_CHR TOK_ROOT TOK_FUNCTION TOK_TEMP
+%token TOK_VARDECL
 
 %left '+' '-'
 %left '*' '/' '%'
@@ -153,10 +162,6 @@ block       : '{' block_ops '}' { $$ = create_block($1,$2,$3); }
 block_ops   : block_ops statement { $$ = adopt1($1,$2); }
             | /*nothing*/ { $$ = new_treeroot(TOK_TEMP,"TEMP BLOCK_OPS ROOT"); }
 
-binop       : expr '+' expr { $$=adopt2($2,$1,$3); }
-            | expr '-' expr { $$=adopt2($2,$1,$3); }
-            | expr '*' expr { $$=adopt2($2,$1,$3); }
-            | expr '/' expr { $$=adopt2($2,$1,$3); }
 
 statement   : block { $$ = $1; }
             | vardecl
@@ -166,13 +171,18 @@ statement   : block { $$ = $1; }
             | expr ';' { free_ast($2); $$=$1; };
             ;
 
-vardecl     : ;
+vardecl     : identdecl '=' expr ';' { $$ = create_vardecl($1,$2,$3,$4); };
 
-while       : ;
+while       : TOK_WHILE '(' expr ')' statement { free_ast2($2,$4); $$ = adopt2($1,$3,$5); };
 
 ifelse      : ;
 
 return      : ;
+
+binop       : expr '+' expr { $$=adopt2($2,$1,$3); }
+            | expr '-' expr { $$=adopt2($2,$1,$3); }
+            | expr '*' expr { $$=adopt2($2,$1,$3); }
+            | expr '/' expr { $$=adopt2($2,$1,$3); }
 
 expr        : binop { $$=$1; }
             | call 
