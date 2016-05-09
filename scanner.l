@@ -56,6 +56,7 @@ STRING          \"({LETTER}|{DIGIT}|{ESCAPE}|{MISC})*\"
 "-"             { return yylval_token('-'); }
 "*"             { return yylval_token('*'); }
 "/"             { return yylval_token('/'); }
+"%"             { return yylval_token('%'); }
 "="             { return yylval_token('='); }
 ";"             { return yylval_token(';'); }
 "{"             { return yylval_token('{'); }

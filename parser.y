@@ -24,7 +24,7 @@ astree* create_structdef(astree* sstruct, astree* stypeid, astree* lbrace,
 }
 
 
-astree* create_fielddecl_a(astree* fielddecl, astree* basetype, astree* field,
+astree* create_fielddecl(astree* fielddecl, astree* basetype, astree* field,
                          astree* semicolon) {
 
     free_ast(semicolon); 
@@ -34,7 +34,7 @@ astree* create_fielddecl_a(astree* fielddecl, astree* basetype, astree* field,
     return fielddecl;
 }
 
-astree* create_fielddecl_b(astree* fielddecl, astree* basetype, astree* arr,
+astree* create_fielddecl_arr(astree* fielddecl, astree* basetype, astree* arr,
                            astree* field, astree* semicolon) {
 
     free_ast(semicolon); 
@@ -136,104 +136,112 @@ astree* create_return(astree* tok_return, astree* semicolon) {
 %token TOK_ORD TOK_CHR TOK_ROOT TOK_FUNCTION TOK_TEMP
 %token TOK_VARDECL TOK_RETURNVOID
 
-%left '+' '-'
-%left '*' '/' '%'
+%right TOK_IF TOK_ELSE
+%right '='
+%left  TOK_EQ TOK_NE TOK_LT TOK_LE TOK_GT TOK_GE
+%left  '+' '-'
+%left  '*' '/' '%'
+%right TOK_POS TOK_NEG '!' TOK_NEW TOK_ORD TOK_CHR
 
 %start program
 
 %%
 
-program     : body { yyparse_astree = $1; } ;
-
-body        : body structdef { $$ = adopt1($1, $2); }
-            | body function  { $$ = adopt1($1, $2); }
-            | body statement { $$ = adopt1($1, $2); }
-            | /*nothing*/    { $$ = new_treeroot(TOK_ROOT, "PROGRAM_ROOT"); }
+program     : body                                              { yyparse_astree = $1; }
             ;
-
-structdef   : TOK_STRUCT TOK_IDENT '{' fielddecl '}' { $$ = create_structdef($1,$2,$3,$4,$5); }
+body        : body structdef                                    { $$ = adopt1($1, $2); }
+            | body function                                     { $$ = adopt1($1, $2); }
+            | body statement                                    { $$ = adopt1($1, $2); }
+            | /*nothing*/                                       { $$ = new_treeroot(TOK_ROOT, "PROGRAM_ROOT"); }
             ;
-
-fielddecl   : fielddecl basetype TOK_IDENT ';' { $$ = create_fielddecl_a($1,$2,$3,$4); }
-            | fielddecl basetype TOK_ARRAY TOK_IDENT ';'{ $$ = create_fielddecl_b($1,$2,$3,$4,$5); }
-            | /*nothing*/ { $$ = new_treeroot(TOK_TEMP,"FIELDDECL ROOT"); }
+structdef   : TOK_STRUCT TOK_IDENT '{' fielddecl '}'            { $$ = create_structdef($1,$2,$3,$4,$5); }
             ;
-
-basetype    : TOK_VOID { $$ = $1; }
-            | TOK_BOOL { $$ = $1; }
-            | TOK_CHAR { $$ = $1; }
-            | TOK_INT { $$ = $1; }
-            | TOK_STRING { $$ = $1; }
-            | TOK_IDENT { $1->symbol = TOK_TYPEID; }
+fielddecl   : fielddecl basetype TOK_IDENT ';'                  { $$ = create_fielddecl($1,$2,$3,$4); }
+            | fielddecl basetype TOK_ARRAY TOK_IDENT ';'        { $$ = create_fielddecl_arr($1,$2,$3,$4,$5); }
+            | /*nothing*/                                       { $$ = new_treeroot(TOK_TEMP,"FIELDDECL ROOT"); }
             ;
-
-function    : identdecl '(' funargs ')' block { $$ = create_function($1,$2,$3,$4,$5); };
-
-identdecl   : basetype TOK_IDENT { $$ = create_identdecl($1,$2); }
-            | basetype TOK_ARRAY TOK_IDENT { $$ = create_identdecl_arr($1,$2,$3); }
+basetype    : TOK_VOID                                          { $$ = $1; }
+            | TOK_BOOL                                          { $$ = $1; }
+            | TOK_CHAR                                          { $$ = $1; }
+            | TOK_INT                                           { $$ = $1; }
+            | TOK_STRING                                        { $$ = $1; }
+            | TOK_IDENT                                         { $1->symbol = TOK_TYPEID; $$ = $1; }
             ;
-
-funargs     : funargs identdecl { $$ = adopt1($1,$2); }
-            | funargs ',' identdecl { free_ast($2); $$ = adopt1($1,$3); }
-            | /*nothing*/ { $$ = new_treeroot(TOK_TEMP,"TEMP FUNARGS ROOT"); }
+function    : identdecl '(' funargs ')' block                   { $$ = create_function($1,$2,$3,$4,$5); }
+            ;
+identdecl   : basetype TOK_IDENT                                { $$ = create_identdecl($1,$2); }
+            | basetype TOK_ARRAY TOK_IDENT                      { $$ = create_identdecl_arr($1,$2,$3); }
+            ;
+funargs     : funargs identdecl                                 { $$ = adopt1($1,$2); }
+            | funargs ',' identdecl                             { free_ast($2); $$ = adopt1($1,$3); }
+            | /*nothing*/                                       { $$ = new_treeroot(TOK_TEMP,"TEMP FUNARGS ROOT"); }
             ;   
-
-block       : '{' block_ops '}' { $$ = create_block($1,$2,$3); }
-            | ';' { $1->symbol = TOK_BLOCK; $$ = $1; }
+block       : '{' block_ops '}'                                 { $$ = create_block($1,$2,$3); }
+            | ';'                                               { $1->symbol = TOK_BLOCK; $$ = $1; }
             ;
-
-block_ops   : block_ops statement { $$ = adopt1($1,$2); }
-            | /*nothing*/ { $$ = new_treeroot(TOK_TEMP,"TEMP BLOCK_OPS ROOT"); }
-
-
-statement   : block { $$ = $1; }
-            | vardecl { $$ = $1; }
-            | while { $$ = $1; }
-            | ifelse { $$ = $1; }
-            | return  { $$ = $1; }
-            | expr ';' { free_ast($2); $$=$1; };
+block_ops   : block_ops statement                               { $$ = adopt1($1,$2); }
+            | /*nothing*/                                       { $$ = new_treeroot(TOK_TEMP,"TEMP BLOCK_OPS ROOT"); }
             ;
-
-vardecl     : identdecl '=' expr ';' { $$ = create_vardecl($1,$2,$3,$4); };
-
-while       : TOK_WHILE '(' expr ')' statement { free_ast2($2,$4); $$ = adopt2($1,$3,$5); };
-
-ifelse      : TOK_IF '(' expr ')' statement { free_ast2($2,$4); $$ = adopt2($1,$3,$5); }
-            | TOK_IF '(' expr ')' statement TOK_ELSE statement { $$ = create_ifelse($1,$2,$3,$4,$5,$6,$7); }
+statement   : block                                             { $$ = $1; }
+            | vardecl                                           { $$ = $1; }
+            | while                                             { $$ = $1; }
+            | ifelse                                            { $$ = $1; }
+            | return                                            { $$ = $1; }
+            | expr ';'                                          { free_ast($2); $$=$1; };
             ;
-
-return      : TOK_RETURN ';' { $$ = create_return($1,$2); }
-            | TOK_RETURN expr ';' { free_ast($3); $$ = adopt1($1,$2); }
+vardecl     : identdecl '=' expr ';'                            { $$ = create_vardecl($1,$2,$3,$4); }
             ;
-
-binop       : expr '+' expr { $$=adopt2($2,$1,$3); }
-            | expr '-' expr { $$=adopt2($2,$1,$3); }
-            | expr '*' expr { $$=adopt2($2,$1,$3); }
-            | expr '/' expr { $$=adopt2($2,$1,$3); }
-
-expr        : binop { $$=$1; }
-            | call 
-            | '(' expr ')'
-            | variable { $$=$1; }
-            | constant { $$=$1; }
+while       : TOK_WHILE '(' expr ')' statement                  { free_ast2($2,$4); $$ = adopt2($1,$3,$5); }
             ;
-
-allocator   : ;
-
-call_args   : ',' expr | ',' expr call_args ;
-
+ifelse      : TOK_IF '(' expr ')' statement                     { free_ast2($2,$4); $$ = adopt2($1,$3,$5); }
+            | TOK_IF '(' expr ')' statement TOK_ELSE statement  { $$ = create_ifelse($1,$2,$3,$4,$5,$6,$7); }
+            ;
+return      : TOK_RETURN ';'                                    { $$ = create_return($1,$2); }
+            | TOK_RETURN expr ';'                               { free_ast($3); $$ = adopt1($1,$2); }
+            ;
+binop       : expr '+' expr                                     { $$=adopt2($2,$1,$3); }
+            | expr '-' expr                                     { $$=adopt2($2,$1,$3); }
+            | expr '*' expr                                     { $$=adopt2($2,$1,$3); }
+            | expr '/' expr                                     { $$=adopt2($2,$1,$3); }
+            | expr '%' expr                                     { $$=adopt2($2,$1,$3); }
+            | expr '=' expr                                     { $$=adopt2($2,$1,$3); }
+            | expr TOK_EQ expr                                  { $$=adopt2($2,$1,$3); }
+            | expr TOK_NE expr                                  { $$=adopt2($2,$1,$3); }
+            | expr TOK_GT expr                                  { $$=adopt2($2,$1,$3); }
+            | expr TOK_GE expr                                  { $$=adopt2($2,$1,$3); }
+            | expr TOK_LT expr                                  { $$=adopt2($2,$1,$3); }
+            | expr TOK_LE expr                                  { $$=adopt2($2,$1,$3); }
+            ;
+unop        : '+' expr                                          { $1->symbol=TOK_POS; $$=adopt1($1,$2); }
+            | '-' expr                                          { $1->symbol=TOK_NEG; $$=adopt1($1,$2); }
+            | '!' expr                                          { $$=adopt1($1,$2); }
+            | TOK_ORD expr                                      { $$=adopt1($1,$2); }
+            | TOK_CHR expr                                      { $$=adopt1($1,$2); }
+            ;
+expr        : binop                                             { $$=$1; }
+            | unop                                              { $$=$1; }
+            | allocator                                         { $$=$1; }
+            | call                                              { $$=$1; }
+            | '(' expr ')'                                      {        }
+            | variable                                          { $$=$1; }
+            | constant                                          { $$=$1; }
+            ;
+allocator   :
+            ;
+call_args   : ',' expr | ',' expr call_args
+            ;
 call        : TOK_IDENT '(' ')' 
             | TOK_IDENT '(' expr ')' 
             | TOK_IDENT '(' expr call_args ')'
             ;
-
 variable    : TOK_IDENT         { $$=$1; }
             ;
-
 constant    : TOK_INTCON        { $$=$1; }
             | TOK_CHARCON       { $$=$1; }
+            | TOK_STRINGCON     { $$=$1; }
             | TOK_TRUE          { $$=$1; }
             | TOK_FALSE         { $$=$1; }
+            | TOK_NULL          { $$=$1; }
             ;
          
 
