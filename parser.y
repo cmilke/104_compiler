@@ -96,6 +96,25 @@ astree* create_vardecl(astree* identdecl, astree* equals, astree* expr, astree* 
 }
 
 
+astree* create_ifelse(astree* tok_if, astree* lparen, astree* expr, astree* rparen,
+            astree* statement1, astree* tok_else, astree* statement2) {
+    
+    free_ast3(lparen, rparen, tok_else);
+
+    tok_if->symbol = TOK_IFELSE;
+    adopt2(tok_if, expr, statement1);
+    adopt1(tok_if, statement2);
+
+    return tok_if;
+}
+
+astree* create_return(astree* tok_return, astree* semicolon) {
+    free_ast(semicolon); 
+    tok_return->symbol = TOK_RETURNVOID;
+    return tok_return;
+}
+
+
 
 %}
 
@@ -115,7 +134,7 @@ astree* create_vardecl(astree* identdecl, astree* equals, astree* expr, astree* 
 %token TOK_BLOCK TOK_CALL TOK_IFELSE TOK_DECLID TOK_PARAMLIST
 %token TOK_POS TOK_NEG TOK_NEWARRAY TOK_TYPEID TOK_FIELD
 %token TOK_ORD TOK_CHR TOK_ROOT TOK_FUNCTION TOK_TEMP
-%token TOK_VARDECL
+%token TOK_VARDECL TOK_RETURNVOID
 
 %left '+' '-'
 %left '*' '/' '%'
@@ -140,7 +159,11 @@ fielddecl   : fielddecl basetype TOK_IDENT ';' { $$ = create_fielddecl_a($1,$2,$
             | /*nothing*/ { $$ = new_treeroot(TOK_TEMP,"FIELDDECL ROOT"); }
             ;
 
-basetype    : TOK_VOID | TOK_BOOL | TOK_CHAR | TOK_INT | TOK_STRING
+basetype    : TOK_VOID { $$ = $1; }
+            | TOK_BOOL { $$ = $1; }
+            | TOK_CHAR { $$ = $1; }
+            | TOK_INT { $$ = $1; }
+            | TOK_STRING { $$ = $1; }
             | TOK_IDENT { $1->symbol = TOK_TYPEID; }
             ;
 
@@ -164,10 +187,10 @@ block_ops   : block_ops statement { $$ = adopt1($1,$2); }
 
 
 statement   : block { $$ = $1; }
-            | vardecl
-            | while
-            | ifelse
-            | return
+            | vardecl { $$ = $1; }
+            | while { $$ = $1; }
+            | ifelse { $$ = $1; }
+            | return  { $$ = $1; }
             | expr ';' { free_ast($2); $$=$1; };
             ;
 
@@ -175,9 +198,13 @@ vardecl     : identdecl '=' expr ';' { $$ = create_vardecl($1,$2,$3,$4); };
 
 while       : TOK_WHILE '(' expr ')' statement { free_ast2($2,$4); $$ = adopt2($1,$3,$5); };
 
-ifelse      : ;
+ifelse      : TOK_IF '(' expr ')' statement { free_ast2($2,$4); $$ = adopt2($1,$3,$5); }
+            | TOK_IF '(' expr ')' statement TOK_ELSE statement { $$ = create_ifelse($1,$2,$3,$4,$5,$6,$7); }
+            ;
 
-return      : ;
+return      : TOK_RETURN ';' { $$ = create_return($1,$2); }
+            | TOK_RETURN expr ';' { free_ast($3); $$ = adopt1($1,$2); }
+            ;
 
 binop       : expr '+' expr { $$=adopt2($2,$1,$3); }
             | expr '-' expr { $$=adopt2($2,$1,$3); }
@@ -193,7 +220,7 @@ expr        : binop { $$=$1; }
 
 allocator   : ;
 
-call_args        : ',' expr | ',' expr call_args ;
+call_args   : ',' expr | ',' expr call_args ;
 
 call        : TOK_IDENT '(' ')' 
             | TOK_IDENT '(' expr ')' 

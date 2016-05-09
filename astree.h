@@ -40,5 +40,7 @@ void free_ast (astree* tree);
 // Recursively free two astrees.
 void free_ast2 (astree* tree1, astree* tree2);
 
+void free_ast3 (astree* tree1, astree* tree2, astree* tree3);
+
 #endif
 
