@@ -6,16 +6,20 @@
 using namespace std;
 
 #include "auxlib.h"
+#include "typechecking.h"
 
 struct astree {
    int symbol;               // token code
    size_t filenr;            // index into filename stack
    size_t linenr;            // line number from source code
    size_t offset;            // offset of token with current line
+   size_t block_nr;          
+   attr_bitset attributes;
    const string* lexinfo;    // pointer to lexical information
    vector<astree*> children; // children of this n-way node
    astree (int symbol, int filenr, int linenr,
-           int offset, const char* clexinfo);
+           int offset, size_t block_nr, 
+           attr_bitset attributes, const char* clexinfo);
 };
 
 // Append one child to the vector of children.

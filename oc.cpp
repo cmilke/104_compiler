@@ -23,6 +23,7 @@ using namespace std;
 #include "lyutils.h"
 #include "yyparse.h"
 #include "stringset.h"
+#include "symtable.h"
 
 
 
@@ -54,22 +55,6 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
 
 
 
-// Run cpp against the lines of the file.
-/*void gettokens (string filename, astree* parseroot) {
-    __debugprintf('b', "oc.cpp", -1, "gettokens",
-            "current file = %s\n",filename.c_str());
-
-    for (;;) {
-        int symbol = yylex();
-        if (symbol == YYEOF) break;
-
-        lexer_useraction();
-        astree* newtree = get_newtree(symbol);
-        intern_stringset(yytext);
-        adopt1(parseroot, newtree);
-    }
-}*/
-
 void depth_first_print(FILE* tok_f, FILE* ast_f, int depth, astree* root) {
     fprintf (tok_f, "%2ld  %02ld.%03ld  %3d  %-15s  (%s)\n",
             root->filenr, root->linenr, root->offset, root->symbol,
@@ -77,14 +62,17 @@ void depth_first_print(FILE* tok_f, FILE* ast_f, int depth, astree* root) {
 
 
     for(int indentI = 0; indentI < depth; indentI++) fprintf(ast_f, "|    ");
-    fprintf(ast_f, "%s  \"%s\"  %ld.%ld.%ld\n",
+    fprintf(ast_f, "%s  \"%s\"  %ld.%ld.%ld {%ld} %05lX\n",
             get_yytname(root->symbol), root->lexinfo->c_str(),
-            root->filenr, root->linenr, root->offset);
+            root->filenr, root->linenr, root->offset,
+            root->block_nr, root->attributes.to_ulong() );
 
     for(auto tree : root->children) {
         depth_first_print(tok_f, ast_f, depth+1, tree);
     }
 }
+
+
 
 void make_output_files(string filename) {
     int delimit_i = filename.rfind(".");
@@ -129,6 +117,8 @@ int main (int argc, char** argv) {
             int pclose_rc = pclose (yyin);
             eprint_status (command.c_str(), pclose_rc);
             if (pclose_rc != 0) set_exitstatus (EXIT_FAILURE);
+
+            create_symbol_table(yyparse_astree);
 
             make_output_files(filename);
         }

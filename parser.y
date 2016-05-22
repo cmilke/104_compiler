@@ -67,14 +67,14 @@ astree* create_function(astree* identifier, astree* lparen,
 
 astree* create_identdecl(astree* basetype, astree* declid) {
     declid->symbol = TOK_DECLID;
-    adopt1(basetype,declid);
-    return basetype;
+    adopt1(declid,basetype);
+    return declid;
 }
 
 
 astree* create_identdecl_arr(astree* basetype, astree* arr, astree* declid) {
     declid->symbol = TOK_DECLID;
-    adopt2(basetype,arr,declid);
+    adopt2(declid,basetype,arr);
     return basetype;
 }
 

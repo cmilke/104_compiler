@@ -1,5 +1,5 @@
-CPPFILES = oc.cpp auxlib.cpp lyutils.cpp astree.cpp stringset.cpp
-HEADERS  = auxlib.h lyutils.h astree.h stringset.h
+CPPFILES = oc.cpp auxlib.cpp lyutils.cpp astree.cpp stringset.cpp symtable.cpp symstack.cpp typechecking.cpp
+HEADERS  = auxlib.h lyutils.h astree.h stringset.h symtable.h symstack.h typechecking.h
 
 FLEXSRC  = scanner.l
 BISONSRC = parser.y
@@ -14,7 +14,7 @@ F_B_OUT  = ${LEXH} ${LEXC} ${PARSEHDR} ${PARSECPP} ${PARSEOUT}
 EXTRA    = README Makefile
 SOURCE   = ${CPPFILES} ${HEADERS} ${FLEXSRC} ${BISONSRC} ${EXTRA}
 
-OBJECTS  = auxlib.o lyutils.o astree.o stringset.o yylex.o yyparse.o
+OBJECTS  = auxlib.o lyutils.o astree.o stringset.o yylex.o yyparse.o symtable.o symstack.o typechecking.o
 PRODUCTS = *.str *.tok *.ast *.log ${F_B_OUT}
 
 COMPILE  = g++ -g -O0 -Wall -Wextra -std=gnu++14 -o
@@ -38,7 +38,7 @@ spotless: clean
 
 
 submit: ${SOURCE} ci
-	submit cmps104a-wm.s16 asg3 ${SOURCE}
+	submit cmps104a-wm.s16 asg4 ${SOURCE}
 
 ci: ${SOURCE}
 	git add ${SOURCE}

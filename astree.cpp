@@ -10,9 +10,11 @@
 #include "stringset.h"
 #include "lyutils.h"
 
-astree::astree (int symbol, int filenr, int linenr, int offset, const char* clexinfo):
+astree::astree (int symbol, int filenr, int linenr, int offset,
+                size_t block_nr, attr_bitset attributes, const char* clexinfo):
         symbol (symbol), filenr (filenr), linenr (linenr),
-        offset (offset), lexinfo (intern_stringset (clexinfo)) {
+        offset (offset), block_nr (block_nr),
+        attributes( attributes ), lexinfo (intern_stringset (clexinfo)) {
 
     DEBUGF ('f', "astree %p->{%d:%d.%d: %s: \"%s\"}\n",
             (void*) this, filenr, linenr, offset,
