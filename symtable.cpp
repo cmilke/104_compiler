@@ -11,8 +11,10 @@ vector<int> block_stack;
 
 
 void create_symbol_table(astree* yyparse_astree) {
+    cout << "stack " << symbol_stack.size() << endl;
     block_stack.push_back(block_number);
     symbol_stack.push_back(nullptr);
+    cout << "stack " << symbol_stack.size() << endl;
 
     for( astree* child : yyparse_astree->children ) {
         invoke_switchboard(child);
@@ -23,7 +25,7 @@ void create_symbol_table(astree* yyparse_astree) {
 
 attr_bitset invoke_switchboard(astree* root) {
     switch(root->symbol) {
-        case '=':            return switch_assignment(root); break;
+        case '=':            return update_binary(root); break;
         case TOK_VOID:       return update_node(root,0x10000); break;
         case TOK_BOOL:       return update_node(root,0x08000); break;
         case TOK_CHAR:       return update_node(root,0x04000); break;
@@ -216,7 +218,21 @@ attr_bitset switch_tok_ge( astree* root ) {
 
 
 attr_bitset switch_tok_ident( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    const string* key = root->lexinfo;
+
+    for ( symbol_table* table : symbol_stack ) {
+        if ( table == nullptr ) continue;
+        table->find(key);
+
+        if ( table->find(key) != table->end()) {
+            symbol* orig = table->at(key);
+            attr_bitset new_bits = orig->attributes;
+            root->block_nr = block_stack.back();
+            root->attributes = new_bits;
+            return new_bits;
+        }
+    }
+    printf("VARIABLE NEVER DECLARED\n");
     return -1;
 }
 
@@ -227,6 +243,7 @@ attr_bitset switch_tok_block( astree* root ) {
     block_stack.push_back(block_number);
 
     symbol_stack.push_back(nullptr);
+    cout << "block: stack " << symbol_stack.size() << endl;
     for( astree* child : root->children ) {
         invoke_switchboard(child);
     }
@@ -348,9 +365,10 @@ attr_bitset switch_tok_vardecl( astree* root ) {
     attr_bitset bit_value = compare_types(ltype,rtype);
 
     if ( symbol_stack.back() == nullptr ) {
-        symbol_table new_table;
-        symbol_stack.push_back(&new_table);
+        symbol_table* new_table = new symbol_table;
+        symbol_stack.back() = new_table;
     }
+    cout << "stack " << symbol_stack.size() << endl;
     
     symbol_table* symtable = symbol_stack.back();
 
@@ -369,6 +387,7 @@ attr_bitset switch_tok_vardecl( astree* root ) {
         new_node->offset = lval->offset;
         new_node->block_nr = block_stack.back();
         new_node->parameters = nullptr;
+
         symtable->emplace(lval->lexinfo,new_node);
 
         lval->block_nr = block_stack.back();

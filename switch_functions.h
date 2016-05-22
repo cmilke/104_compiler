@@ -3,6 +3,7 @@
 attr_bitset invoke_switchboard(astree* root);
 
 attr_bitset update_node( astree* root, unsigned long val );
+attr_bitset update_binary( astree* root );
 
 attr_bitset switch_assignment( astree* root );
 attr_bitset switch_tok_void( astree* root );
