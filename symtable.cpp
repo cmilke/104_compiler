@@ -2,6 +2,7 @@
 #include <iostream>
 #include "symtable.h"
 #include "switch_functions.h"
+#include "lyutils.h"
 
 
 
@@ -26,12 +27,13 @@ void create_symbol_table(astree* yyparse_astree) {
 
 attr_bitset invoke_switchboard(astree* root) {
     switch(root->symbol) {
-        case '+': //TODO: maybe needed for strings?
+        case '+':
         case '-':
         case '*':
         case '/':
         case '%':            return int_op(root); break;
-        case '=':            return update_binary(root); break;
+        case '=':            return switch_assignment(root); break;
+        case '[': //TODO:array access
         case TOK_VOID:       return update_node(root,0x10000); break;
         case TOK_BOOL:       return update_node(root,0x08000); break;
         case TOK_CHAR:       return update_node(root,0x04000); break;
@@ -41,7 +43,7 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_ELSE:       return switch_tok_else(root); break; //TODO
         case TOK_WHILE:      return switch_tok_while(root); break; //TODO
         case TOK_RETURN:     return switch_tok_return(root); break; //TODO
-        case TOK_STRUCT:     return switch_tok_struct(root); break; //TODO
+        case TOK_STRUCT:     return switch_tok_struct(root); break;
         case TOK_FALSE:      return update_node(root,0x08004); break;
         case TOK_TRUE:       return update_node(root,0x08004); break;
         case TOK_NULL:       return switch_tok_null(root); break; //TODO
@@ -64,11 +66,10 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_NEG:        return switch_tok_neg(root); break; //TODO
         case TOK_NEWARRAY:   return switch_tok_newarray(root); break; //TODO
         case TOK_TYPEID:     return switch_tok_typeid(root); break; //TODO
-        case TOK_FIELD:      return switch_tok_field(root); break; //TODO
         case TOK_ORD:        return switch_tok_ord(root); break; //TODO
         case TOK_CHR:        return switch_tok_chr(root); break; //TODO
-        case TOK_FUNCTION:
-        case TOK_PROTOTYPE:  return switch_tok_prototype(root); break;
+        case TOK_PROTOTYPE:
+        case TOK_FUNCTION:   return switch_tok_function(root); break;
         case TOK_VARDECL:    return switch_tok_vardecl(root); break;
         case TOK_RETURNVOID: return switch_tok_returnvoid(root); break; //TODO
         case TOK_NEWSTRING:  return switch_tok_newstring(root); break; //TODO
@@ -89,6 +90,18 @@ symbol_table* get_current_symtable() {
 }
 
 
+symbol* retrieve_symbol(astree* root) {
+    const string* key = root->lexinfo;
+
+    for ( symbol_table* table : symbol_stack ) {
+        if ( table == nullptr ) continue;
+        if ( table->find(key) != table->end()) 
+            return table->at(key);
+    }
+    return nullptr;
+}
+
+
 
 attr_bitset update_node( astree* root, attr_bitset new_bits ) {
     root->block_nr = block_stack.back();
@@ -106,11 +119,17 @@ attr_bitset update_node( astree* root, unsigned long val ) {
 
 attr_bitset get_declid_type( astree* declid, attr_bitset mask ) {
     attr_bitset dectype = invoke_switchboard(declid->children[0]);
-    int is_array = declid->children.size() - 1; 
+    int is_array = declid->children.size() - 1;
     if (is_array) dectype |= attr_bitset(0x00200);
 
     dectype |= mask;
     return update_node(declid,dectype);
+}
+
+
+
+attr_bitset get_declid_type( astree* declid, unsigned long mask ) {
+    return get_declid_type(declid,attr_bitset(mask));
 }
 
 
@@ -234,99 +253,120 @@ void activate_function(astree* root, vector<symbol*>* params) {
 
 
 attr_bitset switch_assignment( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
-    return -1;
+    attr_bitset optype = update_binary(root);
+    if ( !optype.test(7) ) {
+        string error = "ASSIGNING TO NON-ASSIGN-ABLE SYMBOL";
+        throw_error ( root->children[0], root->children[1], error);
+    }
+    return update_node(root,0x00002);
 }
 
 
 
 attr_bitset switch_tok_if( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_else( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_while( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_return( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_struct( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
-    return -1;
+    const string* key = root->children[0]->lexinfo;
+
+    symbol_table* symtable = symbol_stack[0];
+    if (symtable->find(key) != symtable->end()) {
+        string error = "STRUCT PREVIOUSLY DEFINED";
+        throw_error(root,symtable->at(key),error);
+        return -1;
+
+    } else {
+        attr_bitset bits = attr_bitset(0x00420);
+        symbol_table* field_table = new symbol_table;
+        symbol* new_struct = generate_symbol(root,bits,field_table,nullptr);
+        symtable->emplace(key, new_struct);
+
+        bool first = true;
+        for ( astree* field : root->children ) {
+            if (first) {first = false; continue;}
+            const string* field_name = field->lexinfo;
+            attr_bitset ftype = get_declid_type(field,0x00040);
+            symbol* new_field = generate_symbol(field,ftype,nullptr,nullptr);
+
+            if (field_table->find(field_name) != field_table->end()) {
+                string error = "FIELD ALREADY DECLARED IN STRUCT";
+                throw_error(field_table->at(field_name),new_field,error);
+                return -1;
+            } else {
+                field_table->emplace(field_name, new_field);
+            }
+        }
+
+        return bits;
+    }
 }
 
 
 
 attr_bitset switch_tok_false( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_true( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_null( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_new( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_array( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_ident( astree* root ) {
-    const string* key = root->lexinfo;
-
-    for ( symbol_table* table : symbol_stack ) {
-        if ( table == nullptr ) continue;
-        table->find(key);
-
-        if ( table->find(key) != table->end()) {
-            symbol* orig = table->at(key);
-            attr_bitset new_bits = orig->attributes;
-            root->block_nr = block_stack.back();
-            root->attributes = new_bits;
-            return new_bits;
-        }
-    }
-    printf("VARIABLE NEVER DECLARED\n");
-    return -1;
+    symbol* orig = retrieve_symbol(root);
+    if ( orig == nullptr ) return -1;
+    return update_node(root,orig->attributes);
 }
 
 
@@ -347,76 +387,104 @@ attr_bitset switch_tok_block( astree* root ) {
 
 
 attr_bitset switch_tok_call( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
-    return -1;
+    symbol* fun = retrieve_symbol(root->children[0]);
+    if ( fun == nullptr ) return -1;
+
+    vector<attr_bitset> bitlist;
+    size_t num_children = root->children.size();
+    for ( size_t i = 1; i < num_children; i++ ) {
+        astree* child = root->children[i];
+        attr_bitset childtype = invoke_switchboard(child);
+        bitlist.push_back(childtype);
+    }
+
+    vector<symbol*>* params = fun->parameters;
+
+    size_t len = bitlist.size();
+    if ( len != params->size() ) {
+        string error = "FUNCTION PARAMETERS DO NOT MATCH";
+        throw_error(root,fun,error);
+    }
+
+    for (size_t i = 0; i < len; i++) {
+        attr_bitset bits1 = bitlist[i];
+        attr_bitset bits2 = params->at(i)->attributes;
+
+        if ( (bits1&typemask) != (bits2&typemask) ) {
+            string error = "FUNCTION PARAMETERS DO NOT MATCH";
+            throw_error(root,fun,error);
+        }
+    }
+
+    return update_node(root,fun->attributes);
 }
 
 
 
 attr_bitset switch_tok_ifelse( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_pos( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_neg( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_newarray( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_typeid( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_field( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_ord( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_chr( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_root( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
-attr_bitset switch_tok_prototype( astree* root ) {
+attr_bitset switch_tok_function( astree* root ) {
     bool is_function = (root->symbol == TOK_FUNCTION);
 
     astree* paramlist = root->children[1];
@@ -425,7 +493,7 @@ attr_bitset switch_tok_prototype( astree* root ) {
     astree* declid = root->children[0];
     attr_bitset bitmask = attr_bitset(0x0);
     if (is_function) bitmask = attr_bitset(0x00100);
-    attr_bitset dectype = get_declid_type( declid, bitmask);
+    attr_bitset dectype = get_declid_type(declid,bitmask);
     const string* key = declid->lexinfo;
 
     symbol* newsym = generate_symbol(declid,dectype,nullptr,params);
@@ -470,7 +538,7 @@ attr_bitset switch_tok_prototype( astree* root ) {
 
 
 attr_bitset switch_tok_temp( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
@@ -478,7 +546,7 @@ attr_bitset switch_tok_temp( astree* root ) {
 
 attr_bitset switch_tok_vardecl( astree* root ) {
     astree* lval = root->children[0];
-    attr_bitset ltype = get_declid_type( lval, attr_bitset(0x0088) );
+    attr_bitset ltype = get_declid_type(lval,0x0088);
     const string* key = lval->lexinfo;
 
     symbol* new_node = generate_symbol(lval,ltype,nullptr,nullptr);
@@ -497,27 +565,27 @@ attr_bitset switch_tok_vardecl( astree* root ) {
 
 
 attr_bitset switch_tok_returnvoid( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_newstring( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_tok_error( astree* root ) {
-    printf("UNIMPLEMENTED %d\n",root->symbol);
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
 
 
 attr_bitset switch_error( astree* root ) {
-    printf("UNIMPLEMENTED %d: ERROR ENCOUNTERED: SYMBOL NOT FOUND!!!\n", root->symbol);
+    printf("ERROR ENCOUNTERED: SYMBOL %d NOT FOUND!!!\n", root->symbol);
     return -1;
 }

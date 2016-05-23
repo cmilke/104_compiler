@@ -29,8 +29,8 @@ astree* create_fielddecl(astree* fielddecl, astree* basetype, astree* field,
 
     free_ast(semicolon); 
     field->symbol = TOK_FIELD;
-    adopt1(basetype,field);
-    adopt1(fielddecl,basetype);
+    adopt1(field,basetype);
+    adopt1(fielddecl,field);
     return fielddecl;
 }
 
@@ -39,8 +39,8 @@ astree* create_fielddecl_arr(astree* fielddecl, astree* basetype, astree* arr,
 
     free_ast(semicolon); 
     field->symbol = TOK_FIELD;
-    adopt2(basetype,arr,field);
-    adopt1(fielddecl,basetype);
+    adopt2(field,basetype,arr);
+    adopt1(fielddecl,field);
     return fielddecl;
 }
 
