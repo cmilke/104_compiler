@@ -78,7 +78,7 @@ astree* create_identdecl(astree* basetype, astree* declid) {
 astree* create_identdecl_arr(astree* basetype, astree* arr, astree* declid) {
     declid->symbol = TOK_DECLID;
     adopt2(declid,basetype,arr);
-    return basetype;
+    return declid;
 }
 
 

@@ -65,7 +65,7 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_POS:        return switch_tok_pos(root); break; //TODO
         case TOK_NEG:        return switch_tok_neg(root); break; //TODO
         case TOK_NEWARRAY:   return switch_tok_newarray(root); break; //TODO
-        case TOK_TYPEID:     return switch_tok_typeid(root); break; //TODO
+        case TOK_TYPEID:     return switch_tok_typeid(root); break;
         case TOK_ORD:        return switch_tok_ord(root); break; //TODO
         case TOK_CHR:        return switch_tok_chr(root); break; //TODO
         case TOK_PROTOTYPE:
@@ -93,11 +93,16 @@ symbol_table* get_current_symtable() {
 symbol* retrieve_symbol(astree* root) {
     const string* key = root->lexinfo;
 
-    for ( symbol_table* table : symbol_stack ) {
+    size_t back = symbol_stack.size();
+    size_t i = back;
+    do {
+        i--;
+        symbol_table* table = symbol_stack[i];
         if ( table == nullptr ) continue;
         if ( table->find(key) != table->end()) 
             return table->at(key);
-    }
+    } while(i > 0);
+
     return nullptr;
 }
 
@@ -450,8 +455,9 @@ attr_bitset switch_tok_newarray( astree* root ) {
 
 
 attr_bitset switch_tok_typeid( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
+    symbol* ident = retrieve_symbol(root);
+    if ( ident == nullptr ) return -1;
+    return update_node(root,ident->attributes);
 }
 
 
