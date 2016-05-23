@@ -1,5 +1,5 @@
-CPPFILES = astree.cpp auxlib.cpp lyutils.cpp oc.cpp stringset.cpp symstack.cpp symtable.cpp typechecking.cpp
-HEADERS  = astree.h auxlib.h lyutils.h stringset.h switch_functions.h symstack.h symtable.h typechecking.h
+CPPFILES = astree.cpp auxlib.cpp lyutils.cpp oc.cpp stringset.cpp symtable.cpp typechecking.cpp
+HEADERS  = astree.h auxlib.h lyutils.h stringset.h switch_functions.h symtable.h typechecking.h
 
 FLEXSRC  = scanner.l
 BISONSRC = parser.y
@@ -14,7 +14,7 @@ F_B_OUT  = ${LEXH} ${LEXC} ${PARSEHDR} ${PARSECPP} ${PARSEOUT}
 EXTRA    = README Makefile
 SOURCE   = ${CPPFILES} ${HEADERS} ${FLEXSRC} ${BISONSRC} ${EXTRA}
 
-OBJECTS  = astree.o auxlib.o lyutils.o stringset.o symstack.o symtable.o typechecking.o yylex.o yyparse.o 
+OBJECTS  = astree.o auxlib.o lyutils.o stringset.o symtable.o typechecking.o yylex.o yyparse.o 
 PRODUCTS = *.str *.tok *.ast *.log ${F_B_OUT}
 
 COMPILE  = g++ -g -O0 -Wall -Wextra -std=gnu++14 -o

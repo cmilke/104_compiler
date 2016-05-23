@@ -14,6 +14,7 @@ using symbol_table = unordered_map<const string*, symbol*>;
 using symbol_entry = symbol_table::value_type;
 
 struct symbol {
+    const string* key;
     attr_bitset attributes;
     symbol_table* fields;
     size_t filenr, linenr, offset;

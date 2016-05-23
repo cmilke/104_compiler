@@ -2,8 +2,11 @@
 #define __SWITCH_FUNCTIONS_H__
 attr_bitset invoke_switchboard(astree* root);
 
+attr_bitset update_node( astree* root, attr_bitset new_bits );
 attr_bitset update_node( astree* root, unsigned long val );
 attr_bitset update_binary( astree* root );
+attr_bitset bool_op( astree* root );
+attr_bitset int_op( astree* root );
 
 attr_bitset switch_assignment( astree* root );
 attr_bitset switch_tok_void( astree* root );
@@ -45,6 +48,7 @@ attr_bitset switch_tok_ord( astree* root );
 attr_bitset switch_tok_chr( astree* root );
 attr_bitset switch_tok_root( astree* root );
 attr_bitset switch_tok_function( astree* root );
+attr_bitset switch_tok_prototype( astree* root );
 attr_bitset switch_tok_temp( astree* root );
 attr_bitset switch_tok_vardecl( astree* root );
 attr_bitset switch_tok_returnvoid( astree* root );

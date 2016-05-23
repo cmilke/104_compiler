@@ -52,7 +52,10 @@ astree* create_function(astree* identifier, astree* lparen,
     lparen->symbol = TOK_PARAMLIST;
     transfer_children_and_die(arguments,lparen);
 
-    astree* function_root = new_treeroot(TOK_FUNCTION,"FUNCTION ROOT");
+    int fun_symbol = TOK_FUNCTION;
+    if ( *(block->lexinfo) == ";" ) fun_symbol = TOK_PROTOTYPE;
+    
+    astree* function_root = new_treeroot(fun_symbol,"FUNCTION ROOT");
     function_root->filenr = identifier->filenr;
     function_root->linenr = identifier->linenr;
     function_root->offset = identifier->offset;
@@ -168,7 +171,7 @@ astree* create_call(astree* tok_ident, astree* lparen, astree* call_args, astree
 
 %token TOK_BLOCK TOK_CALL TOK_IFELSE TOK_DECLID TOK_PARAMLIST
 %token TOK_POS TOK_NEG TOK_NEWARRAY TOK_TYPEID TOK_FIELD
-%token TOK_ORD TOK_CHR TOK_ROOT TOK_FUNCTION TOK_TEMP
+%token TOK_ORD TOK_CHR TOK_ROOT TOK_FUNCTION TOK_PROTOTYPE TOK_TEMP
 %token TOK_VARDECL TOK_RETURNVOID TOK_NEWSTRING TOK_ERROR
 
 %right TOK_IF TOK_ELSE
