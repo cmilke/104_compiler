@@ -33,7 +33,8 @@ attr_bitset invoke_switchboard(astree* root) {
         case '/':
         case '%':            return int_op(root); break;
         case '=':            return switch_assignment(root); break;
-        case '[': //TODO:array access
+        case '[':            return array_access(root); break;
+        case '.':            return selector_access(root); break;
         case TOK_VOID:       return update_node(root,0x10000); break;
         case TOK_BOOL:       return update_node(root,0x08000); break;
         case TOK_CHAR:       return update_node(root,0x04000); break;
@@ -47,8 +48,7 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_FALSE:      return update_node(root,0x08004); break;
         case TOK_TRUE:       return update_node(root,0x08004); break;
         case TOK_NULL:       return switch_tok_null(root); break; //TODO
-        case TOK_NEW:        return switch_tok_new(root); break; //TODO
-        case TOK_ARRAY:      return switch_tok_array(root); break; //TODO
+        case TOK_NEW:        return switch_tok_new(root); break;
         case TOK_EQ:
         case TOK_NE:
         case TOK_LT:
@@ -60,11 +60,11 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_CHARCON:    return update_node(root,0x04004); break;
         case TOK_STRINGCON:  return update_node(root,0x00804); break;
         case TOK_BLOCK:      return switch_tok_block(root); break;
-        case TOK_CALL:       return switch_tok_call(root); break; //TODO
+        case TOK_CALL:       return switch_tok_call(root); break;
         case TOK_IFELSE:     return switch_tok_ifelse(root); break; //TODO
         case TOK_POS:        return switch_tok_pos(root); break; //TODO
         case TOK_NEG:        return switch_tok_neg(root); break; //TODO
-        case TOK_NEWARRAY:   return switch_tok_newarray(root); break; //TODO
+        case TOK_NEWARRAY:   return switch_tok_newarray(root); break;
         case TOK_TYPEID:     return switch_tok_typeid(root); break;
         case TOK_ORD:        return switch_tok_ord(root); break; //TODO
         case TOK_CHR:        return switch_tok_chr(root); break; //TODO
@@ -72,7 +72,7 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_FUNCTION:   return switch_tok_function(root); break;
         case TOK_VARDECL:    return switch_tok_vardecl(root); break;
         case TOK_RETURNVOID: return switch_tok_returnvoid(root); break; //TODO
-        case TOK_NEWSTRING:  return switch_tok_newstring(root); break; //TODO
+        case TOK_NEWSTRING:  return update_node(root,0x00800); break;
         default:             return switch_error(root); break;
     }
 }
@@ -203,8 +203,7 @@ attr_bitset update_binary( astree* root, attr_bitset ltype ) {
         throw_error(lval,rval,error);
     }
 
-    attr_bitset bits = (ltype&typemask) | attr_bitset(0x00002);
-    return update_node(root,bits);
+    return update_node(root,ltype);
 }
 
 
@@ -259,7 +258,10 @@ void activate_function(astree* root, vector<symbol*>* params) {
 
 attr_bitset switch_assignment( astree* root ) {
     attr_bitset optype = update_binary(root);
-    if ( !optype.test(7) ) {
+    printf("%s: %05lX\n",root->children[0]->lexinfo->c_str(),optype.to_ulong());
+    cout << optype << endl;
+    cout << endl;
+    if ( !optype.test(3) ) {
         string error = "ASSIGNING TO NON-ASSIGN-ABLE SYMBOL";
         throw_error ( root->children[0], root->children[1], error);
     }
@@ -309,6 +311,7 @@ attr_bitset switch_tok_struct( astree* root ) {
         attr_bitset bits = attr_bitset(0x00420);
         symbol_table* field_table = new symbol_table;
         symbol* new_struct = generate_symbol(root,bits,field_table,nullptr);
+        update_node(root->children[0],bits);
         symtable->emplace(key, new_struct);
 
         bool first = true;
@@ -355,15 +358,7 @@ attr_bitset switch_tok_null( astree* root ) {
 
 
 attr_bitset switch_tok_new( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
-}
-
-
-
-attr_bitset switch_tok_array( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
+    return update_node(root,invoke_switchboard(root->children[0]));
 }
 
 
@@ -448,7 +443,49 @@ attr_bitset switch_tok_neg( astree* root ) {
 
 
 attr_bitset switch_tok_newarray( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
+    astree* base = root->children[0];
+    astree* size = root->children[1];
+
+    attr_bitset base_bits = invoke_switchboard(base);
+    attr_bitset size_bits = invoke_switchboard(size);
+
+    if ( (size_bits&typemask) != attr_bitset(0x02000) ) {
+        string error = "NEW ARRAY SIZE MUST BE OF TYPE INT";
+        throw_error ( root, size, error);
+    }
+
+    return update_node( root, base_bits|attr_bitset(0x00200) );
+}
+
+
+
+
+attr_bitset array_access( astree* root ) {
+    astree* ident = root->children[0];
+    astree* size  = root->children[1];
+
+    attr_bitset ident_bits = invoke_switchboard(ident);
+    attr_bitset size_bits  = invoke_switchboard(size);
+
+    if ( (size_bits&typemask) != attr_bitset(0x02000) ) {
+        string error = "NEW ARRAY SIZE MUST BE OF TYPE INT";
+        throw_error ( root, size, error);
+    }
+
+    if ( !ident_bits.test(9) ) {
+        string error = "IDENTIFIER IS NOT AN ARRAY";
+        throw_error ( ident, error);
+    }
+
+    attr_bitset arr_bits = ident_bits;
+    arr_bits &= attr_bitset(0x1fdff);
+    arr_bits |= attr_bitset(0x00008);
+    return update_node( root, arr_bits );
+}
+
+
+
+selector_access( astree* root ) {
     return -1;
 }
 
@@ -571,13 +608,6 @@ attr_bitset switch_tok_vardecl( astree* root ) {
 
 
 attr_bitset switch_tok_returnvoid( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
-}
-
-
-
-attr_bitset switch_tok_newstring( astree* root ) {
     printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }

@@ -42,6 +42,8 @@ attr_bitset switch_tok_paramlist( astree* root );
 attr_bitset switch_tok_pos( astree* root );
 attr_bitset switch_tok_neg( astree* root );
 attr_bitset switch_tok_newarray( astree* root );
+attr_bitset array_access( astree* root );
+attr_bitset selector_access( astree* root );
 attr_bitset switch_tok_typeid( astree* root );
 attr_bitset switch_tok_field( astree* root );
 attr_bitset switch_tok_ord( astree* root );
