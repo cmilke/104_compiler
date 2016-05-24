@@ -38,7 +38,7 @@ spotless: clean
 
 
 submit: ${SOURCE} ci
-	submit cmps104a-wm.s16 asg4 ${SOURCE}
+	submit cmps104a-wm.s16 asg5 ${SOURCE}
 
 ci: ${SOURCE}
 	git add ${SOURCE}
