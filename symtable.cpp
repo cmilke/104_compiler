@@ -15,9 +15,10 @@
 vector<symbol_table*> symbol_stack;
 int block_number = 0;
 vector<int> block_stack;
+attr_bitset _current_function_value = 0;
 
 
-attr_bitset typemask = attr_bitset(0x1ff20);
+attr_bitset typemask = attr_bitset(0x1fe20);
 
 
 void create_symbol_table(astree* yyparse_astree) {
@@ -49,7 +50,6 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_WHILE:
         case TOK_IF:         return branch_op(root); break;
         case TOK_IFELSE:     return switch_tok_ifelse(root); break;
-        case TOK_RETURN:     return switch_tok_return(root); break; //TODO
         case TOK_STRUCT:     return switch_tok_struct(root); break;
         case TOK_FALSE:      return update_node(root,0x08004); break;
         case TOK_TRUE:       return update_node(root,0x08004); break;
@@ -76,6 +76,7 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_PROTOTYPE:
         case TOK_FUNCTION:   return switch_tok_function(root); break;
         case TOK_VARDECL:    return switch_tok_vardecl(root); break;
+        case TOK_RETURN:     return switch_tok_return(root); break; //TODO
         case TOK_RETURNVOID: return switch_tok_returnvoid(root); break; //TODO
         case TOK_NEWSTRING:  return update_node(root,0x00800); break;
         default:             return switch_error(root); break;
@@ -356,8 +357,27 @@ attr_bitset switch_tok_while( astree* root ) {
 
 
 attr_bitset switch_tok_return( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
+    attr_bitset rettype = invoke_switchboard(root->children[0]);
+
+    if ( (rettype&typemask) != (_current_function_value&typemask) ) {
+        string error = "INCORRECT RETURN TYPE";
+        throw_error(root,error);
+    }
+
+    return rettype;
+}
+
+
+
+attr_bitset switch_tok_returnvoid( astree* root ) {
+    attr_bitset rettype = attr_bitset(0x10000);
+
+    if ( (rettype&typemask) != (_current_function_value&typemask) ) {
+        string error = "INCORRECT RETURN TYPE";
+        throw_error(root,error);
+    }
+
+    return rettype;
 }
 
 
@@ -646,7 +666,9 @@ attr_bitset switch_tok_function( astree* root ) {
                 if (is_function) {
                     if ( !prevbits.test(8) ) {
                         symtable->emplace(key,newsym);
+                        _current_function_value = newsym->attributes;
                         activate_function(root->children[2],params);
+                        _current_function_value = 0;
                     } else {
                         string error = "FUNCTION PREVIOUSLY DEFINED";
                         throw_error(newsym,previous,error);
@@ -663,7 +685,9 @@ attr_bitset switch_tok_function( astree* root ) {
     } else {
         if (is_function) {
             symtable->emplace(key,newsym);
+            _current_function_value = newsym->attributes;
             activate_function(root->children[2],params);
+            _current_function_value = 0;
         } else {
             symtable->emplace(key,newsym);
         }
@@ -698,13 +722,6 @@ attr_bitset switch_tok_vardecl( astree* root ) {
     }
 
     return update_binary(root,ltype);
-}
-
-
-
-attr_bitset switch_tok_returnvoid( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
 }
 
 
