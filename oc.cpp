@@ -55,7 +55,7 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
 
 
 
-void depth_first_print(FILE* tok_f, FILE* ast_f, int depth, astree* root) {
+void depth_first_print(FILE* tok_f, FILE* ast_f, FILE* sym_f, int depth, astree* root) {
     fprintf (tok_f, "%2ld  %02ld.%03ld  %3d  %-15s  (%s)\n",
             root->filenr, root->linenr, root->offset, root->symbol,
             get_yytname(root->symbol), root->lexinfo->c_str());
@@ -67,8 +67,17 @@ void depth_first_print(FILE* tok_f, FILE* ast_f, int depth, astree* root) {
             root->filenr, root->linenr, root->offset,
             root->block_nr, root->attributes.to_ulong() );
 
+
+    if ( root->is_symbol) {
+        for(int indentI = 0; indentI < depth; indentI++) fprintf(sym_f, "   ");
+        fprintf(sym_f, "%s (%ld.%ld.%ld) {%ld} %05lX\n",
+                root->lexinfo->c_str(),
+                root->filenr, root->linenr, root->offset,
+                root->block_nr, root->attributes.to_ulong() );
+    }
+
     for(auto tree : root->children) {
-        depth_first_print(tok_f, ast_f, depth+1, tree);
+        depth_first_print(tok_f, ast_f, sym_f, depth+1, tree);
     }
 }
 
@@ -81,6 +90,7 @@ void make_output_files(string filename) {
     string output_name_str = output_base + ".str";
     string output_name_tok = output_base + ".tok";
     string output_name_ast = output_base + ".ast";
+    string output_name_sym = output_base + ".sym";
 
 
     FILE *str_f = fopen(output_name_str.c_str(), "w");
@@ -89,7 +99,8 @@ void make_output_files(string filename) {
 
     FILE *tok_f = fopen(output_name_tok.c_str(), "w");
     FILE *ast_f = fopen(output_name_ast.c_str(), "w");
-    depth_first_print(tok_f, ast_f, 0, yyparse_astree);
+    FILE *sym_f = fopen(output_name_sym.c_str(), "w");
+    depth_first_print(tok_f, ast_f, sym_f, 0, yyparse_astree);
     fclose(tok_f);
     fclose(ast_f);
 }

@@ -11,10 +11,12 @@
 #include "lyutils.h"
 
 astree::astree (int symbol, int filenr, int linenr, int offset,
-                size_t block_nr, attr_bitset attributes, const char* clexinfo):
+                size_t block_nr, attr_bitset attributes, const char* clexinfo,
+                bool is_symbol):
         symbol (symbol), filenr (filenr), linenr (linenr),
         offset (offset), block_nr (block_nr),
-        attributes( attributes ), lexinfo (intern_stringset (clexinfo)) {
+        attributes( attributes ), lexinfo (intern_stringset (clexinfo) ),
+        is_symbol( is_symbol ) {
 
     DEBUGF ('f', "astree %p->{%d:%d.%d: %s: \"%s\"}\n",
             (void*) this, filenr, linenr, offset,

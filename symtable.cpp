@@ -397,6 +397,7 @@ attr_bitset switch_tok_struct( astree* root ) {
         symbol* new_struct = generate_symbol(root,bits,field_table,nullptr,nullptr);
         update_node(root->children[0],bits);
         symtable->emplace(key, new_struct);
+        root->children[0]->is_symbol = true;
 
         bool first = true;
         for ( astree* field : root->children ) {
@@ -411,6 +412,7 @@ attr_bitset switch_tok_struct( astree* root ) {
                 throw_error(field_table->at(field_name),new_field,error);
                 return -1;
             } else {
+                field->is_symbol = true;
                 field_table->emplace(field_name, new_field);
             }
         }
@@ -666,6 +668,7 @@ attr_bitset switch_tok_function( astree* root ) {
                 if (is_function) {
                     if ( !prevbits.test(8) ) {
                         symtable->emplace(key,newsym);
+                        declid->is_symbol = true;
                         _current_function_value = newsym->attributes;
                         activate_function(root->children[2],params);
                         _current_function_value = 0;
@@ -685,11 +688,13 @@ attr_bitset switch_tok_function( astree* root ) {
     } else {
         if (is_function) {
             symtable->emplace(key,newsym);
+            declid->is_symbol = true;
             _current_function_value = newsym->attributes;
             activate_function(root->children[2],params);
             _current_function_value = 0;
         } else {
             symtable->emplace(key,newsym);
+            declid->is_symbol = true;
         }
     }
 
@@ -719,6 +724,7 @@ attr_bitset switch_tok_vardecl( astree* root ) {
         throw_error(new_node,symtable->at(key),error);
     } else {
         symtable->emplace(lval->lexinfo,new_node);
+        lval->is_symbol = true;
     }
 
     return update_binary(root,ltype);

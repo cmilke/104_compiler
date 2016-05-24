@@ -17,9 +17,10 @@ struct astree {
    attr_bitset attributes;
    const string* lexinfo;    // pointer to lexical information
    vector<astree*> children; // children of this n-way node
+   bool is_symbol;
    astree (int symbol, int filenr, int linenr,
            int offset, size_t block_nr, 
-           attr_bitset attributes, const char* clexinfo);
+           attr_bitset attributes, const char* clexinfo, bool is_symbol);
 };
 
 // Append one child to the vector of children.

@@ -69,7 +69,7 @@ void lexer_badtoken (char* lexeme) {
 int yylval_token (int symbol) {
    int offset = scan_offset - yyleng;
    yylval = new astree (symbol, included_filenames.size() - 1,
-                        scan_linenr, offset, -1, -1, yytext);
+                        scan_linenr, offset, -1, -1, yytext,false);
    return symbol;
 }
 
@@ -77,19 +77,20 @@ int yylval_token (int symbol) {
 astree* get_newtree(int symbol) {
    int offset = scan_offset - yyleng;
    astree* newtree = new astree (symbol, included_filenames.size() - 1,
-                        scan_linenr, offset, -1, -1, yytext);
+                        scan_linenr, offset, -1, -1, yytext, false);
    return newtree;
 }
 
 
 astree* new_parseroot (void) {
-   yyparse_astree = new astree (TOK_ROOT, 0, 0, 0, -1, -1, "TREE_ROOT");
+   yyparse_astree = new astree (TOK_ROOT, 0, 0, 0, -1, -1, "TREE_ROOT", false);
    return yyparse_astree;
 }
 
 
 astree* new_treeroot (int symbol, string lexicalinfo) {
-   astree* newroot = new astree (symbol, 0, 0, 0, -1, -1, lexicalinfo.c_str());
+   astree* newroot = new astree (symbol, 0, 0, 0, -1, -1,
+            lexicalinfo.c_str(), false);
    return newroot;
 }
 
