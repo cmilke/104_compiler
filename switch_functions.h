@@ -8,6 +8,8 @@ attr_bitset update_binary( astree* root );
 attr_bitset equivalent_op( astree* root );
 attr_bitset inequivalent_op( astree* root );
 attr_bitset int_op( astree* root );
+attr_bitset unary_op( astree* root );
+attr_bitset branch_op( astree* root );
 
 attr_bitset switch_assignment( astree* root );
 attr_bitset switch_tok_void( astree* root );
@@ -34,8 +36,6 @@ attr_bitset switch_tok_call( astree* root );
 attr_bitset switch_tok_ifelse( astree* root );
 attr_bitset switch_tok_declid( astree* root );
 attr_bitset switch_tok_paramlist( astree* root );
-attr_bitset switch_tok_pos( astree* root );
-attr_bitset switch_tok_neg( astree* root );
 attr_bitset switch_tok_newarray( astree* root );
 attr_bitset array_access( astree* root );
 attr_bitset selector_access( astree* root );

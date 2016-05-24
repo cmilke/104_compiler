@@ -46,17 +46,17 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_CHAR:       return update_node(root,0x04000); break;
         case TOK_INT:        return update_node(root,0x02000); break;
         case TOK_STRING:     return update_node(root,0x00800); break;
-        case TOK_IF:         return switch_tok_if(root); break; //TODO
-        case TOK_ELSE:       return switch_tok_else(root); break; //TODO
-        case TOK_WHILE:      return switch_tok_while(root); break; //TODO
+        case TOK_WHILE:
+        case TOK_IF:         return branch_op(root); break;
+        case TOK_IFELSE:     return switch_tok_ifelse(root); break;
         case TOK_RETURN:     return switch_tok_return(root); break; //TODO
         case TOK_STRUCT:     return switch_tok_struct(root); break;
         case TOK_FALSE:      return update_node(root,0x08004); break;
         case TOK_TRUE:       return update_node(root,0x08004); break;
-        case TOK_NULL:       return switch_tok_null(root); break; //TODO
+        case TOK_NULL:       return update_node(root,0x01000); break;
         case TOK_NEW:        return switch_tok_new(root); break;
         case TOK_EQ:
-        case TOK_NE:         return equivalent_op(root); break; //TODO
+        case TOK_NE:         return equivalent_op(root); break;
         case TOK_LT:
         case TOK_LE:
         case TOK_GT:
@@ -67,9 +67,8 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_STRINGCON:  return update_node(root,0x00804); break;
         case TOK_BLOCK:      return switch_tok_block(root); break;
         case TOK_CALL:       return switch_tok_call(root); break;
-        case TOK_IFELSE:     return switch_tok_ifelse(root); break; //TODO
-        case TOK_POS:        return switch_tok_pos(root); break; //TODO
-        case TOK_NEG:        return switch_tok_neg(root); break; //TODO
+        case TOK_NEG:
+        case TOK_POS:        return unary_op(root); break;
         case TOK_NEWARRAY:   return switch_tok_newarray(root); break;
         case TOK_TYPEID:     return switch_tok_typeid(root); break;
         case TOK_ORD:        return switch_tok_ord(root); break; //TODO
@@ -276,6 +275,33 @@ attr_bitset int_op( astree* root ) {
 
 
 
+attr_bitset unary_op( astree* root ) {
+    astree* rval = root->children[1];
+    attr_bitset rtype = invoke_switchboard(rval);
+
+    if ( (rtype&typemask) != attr_bitset(0x02000) ) {
+        string error = "INT OPERATOR USED ON NON-INT TYPE";
+        throw_error ( root->children[0], error);
+    }
+
+    return update_node(root,0x02002);
+}
+
+
+
+attr_bitset branch_op( astree* root ) {
+    attr_bitset arg = invoke_switchboard(root->children[0]);
+
+    if ( (arg&typemask) != attr_bitset(0x08000) ) {
+        string error = "STATEMENT REQUIRES BOOLEAN ARGUMENT";
+        throw_error ( root->children[0], error);
+    }
+
+    return invoke_switchboard(root->children[1]);
+}
+
+
+
 void activate_function(astree* root, vector<symbol*>* params) {
     block_number++;
     block_stack.push_back(block_number);
@@ -460,8 +486,15 @@ attr_bitset switch_tok_call( astree* root ) {
 
 
 attr_bitset switch_tok_ifelse( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
+    attr_bitset arg = invoke_switchboard(root->children[0]);
+
+    if ( (arg&typemask) != attr_bitset(0x08000) ) {
+        string error = "STATEMENT REQUIRES BOOLEAN ARGUMENT";
+        throw_error ( root->children[0], error);
+    }
+
+    invoke_switchboard(root->children[1]);
+    return invoke_switchboard(root->children[2]);
 }
 
 
@@ -524,6 +557,27 @@ attr_bitset array_access( astree* root ) {
 
 
 attr_bitset selector_access( astree* root ) {
+//    symbol* orig = retrieve_symbol(root);
+//
+//    symbol* ident = orig->identifier;
+//
+//    if ( ident == nullptr ) {
+//        string error = "VARIABLE IS NOT A STRUCTURE";
+//        throw_error ( root, error);
+//    }
+//
+//    symbol_table* fields = ident->fields;
+//    
+//    const string* key = root->children[2];
+//    if ( fields->find(key) == fields->end()) {
+//        string error = "STRUCTURE FIELD NOT FOUND";
+//        throw_error ( root, ident, error);
+//    } else {
+//        fields->at(key);
+//
+
+
+
     printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }

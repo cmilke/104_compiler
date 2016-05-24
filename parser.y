@@ -180,6 +180,7 @@ astree* create_call(astree* tok_ident, astree* lparen, astree* call_args, astree
 %left  '+' '-'
 %left  '*' '/' '%'
 %right TOK_POS TOK_NEG '!' TOK_NEW TOK_ORD TOK_CHR
+%left '.'
 
 %start program
 
