@@ -20,6 +20,7 @@ struct symbol {
     size_t filenr, linenr, offset;
     size_t block_nr;
     vector<symbol*>* parameters;
+    symbol* identifier;
 };
 
 void create_symbol_table(astree* yyparse_astree);

@@ -5,6 +5,12 @@
 #include "lyutils.h"
 
 
+//FIXME: every bitset value in this is backwards
+//figure out how to replace the hardcoded numbers
+//with the enum values possibly: 
+//long unsigned double bit = (1<<ATTR_bool) | (1<<ATTR_function); ?
+//
+//remember that attr_bitset.test is NOT backwards!
 
 vector<symbol_table*> symbol_stack;
 int block_number = 0;
@@ -50,11 +56,11 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_NULL:       return switch_tok_null(root); break; //TODO
         case TOK_NEW:        return switch_tok_new(root); break;
         case TOK_EQ:
-        case TOK_NE:
+        case TOK_NE:         return equivalent_op(root); break; //TODO
         case TOK_LT:
         case TOK_LE:
         case TOK_GT:
-        case TOK_GE:         return bool_op(root); break;
+        case TOK_GE:         return inequivalent_op(root); break;
         case TOK_IDENT:      return switch_tok_ident(root); break;
         case TOK_INTCON:     return update_node(root,0x02004); break;
         case TOK_CHARCON:    return update_node(root,0x04004); break;
@@ -122,6 +128,28 @@ attr_bitset update_node( astree* root, unsigned long val ) {
 
 
 
+attr_bitset get_declid_type( astree* declid, attr_bitset mask, symbol** sympoint ) {
+    attr_bitset dectype = invoke_switchboard(declid->children[0]);
+    int is_array = declid->children.size() - 1;
+    if (is_array) dectype |= attr_bitset(0x00200);
+
+    if ( dectype.test(5) ) {
+        *sympoint = retrieve_symbol(declid->children[0]);
+    } 
+
+    dectype |= mask;
+    return update_node(declid,dectype);
+}
+
+
+
+attr_bitset get_declid_type( astree* declid, unsigned long mask,
+            symbol** sympoint ) {
+    return get_declid_type(declid,attr_bitset(mask),sympoint);
+}
+
+
+
 attr_bitset get_declid_type( astree* declid, attr_bitset mask ) {
     attr_bitset dectype = invoke_switchboard(declid->children[0]);
     int is_array = declid->children.size() - 1;
@@ -140,7 +168,8 @@ attr_bitset get_declid_type( astree* declid, unsigned long mask ) {
 
 
 symbol* generate_symbol( astree* tree, attr_bitset node_type,
-            symbol_table* new_fields, vector<symbol*>* new_parameters ) {
+            symbol_table* new_fields, vector<symbol*>* new_parameters,
+            symbol* ident ) {
 
         symbol* new_node = (symbol*) malloc( sizeof(symbol) );
 
@@ -152,6 +181,7 @@ symbol* generate_symbol( astree* tree, attr_bitset node_type,
         new_node->offset = tree->offset;
         new_node->block_nr = block_stack.back();
         new_node->parameters = new_parameters;
+        new_node->identifier = ident;
 
         return new_node;
 }
@@ -183,8 +213,9 @@ vector<symbol*>* generate_params( astree* paramlist ) {
     attr_bitset var_mask = attr_bitset(0x00010);
 
     for ( astree* child : paramlist->children ) {
-        attr_bitset bits = get_declid_type(child,var_mask);
-        symbol* newsym = generate_symbol(child,bits,nullptr,nullptr);
+        symbol* symident = nullptr;
+        attr_bitset bits = get_declid_type(child,var_mask,&symident);
+        symbol* newsym = generate_symbol(child,bits,nullptr,nullptr,symident);
         params->push_back(newsym);
     }
 
@@ -214,10 +245,18 @@ attr_bitset update_binary( astree* root ) {
 
 
 
-attr_bitset bool_op( astree* root ) {
+attr_bitset equivalent_op( astree* root ) {
+    update_binary(root);
+    return update_node(root,0x08002);
+}
+
+
+
+attr_bitset inequivalent_op( astree* root ) {
     attr_bitset optype = update_binary(root);
-    if ( (optype&typemask) != attr_bitset(0x08000) ) {
-        string error = "BOOLEAN OPERATOR USED ON NON-BOOLEAN TYPES";
+    if ( (optype&typemask) != attr_bitset(0x04000) &&
+         (optype&typemask) != attr_bitset(0x02000) ) {
+        string error = "CANNOT COMPARE NON-PRIMITIVE TYPES";
         throw_error ( root->children[0], root->children[1], error);
     }
     return update_node(root,0x08002);
@@ -258,9 +297,6 @@ void activate_function(astree* root, vector<symbol*>* params) {
 
 attr_bitset switch_assignment( astree* root ) {
     attr_bitset optype = update_binary(root);
-    printf("%s: %05lX\n",root->children[0]->lexinfo->c_str(),optype.to_ulong());
-    cout << optype << endl;
-    cout << endl;
     if ( !optype.test(3) ) {
         string error = "ASSIGNING TO NON-ASSIGN-ABLE SYMBOL";
         throw_error ( root->children[0], root->children[1], error);
@@ -310,7 +346,7 @@ attr_bitset switch_tok_struct( astree* root ) {
     } else {
         attr_bitset bits = attr_bitset(0x00420);
         symbol_table* field_table = new symbol_table;
-        symbol* new_struct = generate_symbol(root,bits,field_table,nullptr);
+        symbol* new_struct = generate_symbol(root,bits,field_table,nullptr,nullptr);
         update_node(root->children[0],bits);
         symtable->emplace(key, new_struct);
 
@@ -318,8 +354,9 @@ attr_bitset switch_tok_struct( astree* root ) {
         for ( astree* field : root->children ) {
             if (first) {first = false; continue;}
             const string* field_name = field->lexinfo;
-            attr_bitset ftype = get_declid_type(field,0x00040);
-            symbol* new_field = generate_symbol(field,ftype,nullptr,nullptr);
+            symbol* symident = nullptr;
+            attr_bitset ftype = get_declid_type(field,0x00040,&symident);
+            symbol* new_field = generate_symbol(field,ftype,nullptr,nullptr,symident);
 
             if (field_table->find(field_name) != field_table->end()) {
                 string error = "FIELD ALREADY DECLARED IN STRUCT";
@@ -485,7 +522,8 @@ attr_bitset array_access( astree* root ) {
 
 
 
-selector_access( astree* root ) {
+attr_bitset selector_access( astree* root ) {
+    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
     return -1;
 }
 
@@ -536,10 +574,11 @@ attr_bitset switch_tok_function( astree* root ) {
     astree* declid = root->children[0];
     attr_bitset bitmask = attr_bitset(0x0);
     if (is_function) bitmask = attr_bitset(0x00100);
-    attr_bitset dectype = get_declid_type(declid,bitmask);
+    symbol* symident = nullptr;
+    attr_bitset dectype = get_declid_type(declid,bitmask,&symident);
     const string* key = declid->lexinfo;
 
-    symbol* newsym = generate_symbol(declid,dectype,nullptr,params);
+    symbol* newsym = generate_symbol(declid,dectype,nullptr,params,symident);
     symbol_table* symtable = symbol_stack[0];
 
     if (symtable->find(key) != symtable->end()) {
@@ -589,10 +628,11 @@ attr_bitset switch_tok_temp( astree* root ) {
 
 attr_bitset switch_tok_vardecl( astree* root ) {
     astree* lval = root->children[0];
-    attr_bitset ltype = get_declid_type(lval,0x0088);
+    symbol* symident = nullptr;
+    attr_bitset ltype = get_declid_type(lval,0x0088,&symident);
     const string* key = lval->lexinfo;
 
-    symbol* new_node = generate_symbol(lval,ltype,nullptr,nullptr);
+    symbol* new_node = generate_symbol(lval,ltype,nullptr,nullptr,symident);
 
     symbol_table* symtable = get_current_symtable();
     if (symtable->find(key) != symtable->end()) {

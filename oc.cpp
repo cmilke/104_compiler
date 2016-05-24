@@ -111,8 +111,8 @@ int main (int argc, char** argv) {
         yyin = popen (command.c_str(), "r");
         if (yyin == NULL) {
             syserrprintf (command.c_str());
-        }else {
-            yyparse();
+        } else {
+            if ( yyparse() ) exit(1);
 
             int pclose_rc = pclose (yyin);
             eprint_status (command.c_str(), pclose_rc);

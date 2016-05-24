@@ -17,7 +17,7 @@ DIGIT           [0-9]
 IDENT           {LETTER}({LETTER}|{DIGIT})*
 NUMBER          {DIGIT}+
 MISC            [ !#-&(-/:-@\[-`\{-~]
-ESCAPE          \\[abfnrtv\\'\"?]
+ESCAPE          \\[abfnrtv\\'\"?0]
 CHAR            '({LETTER}|{DIGIT}|{ESCAPE}|{MISC})'
 STRING          \"({LETTER}|{DIGIT}|{ESCAPE}|{MISC})*\"
 
@@ -66,6 +66,7 @@ STRING          \"({LETTER}|{DIGIT}|{ESCAPE}|{MISC})*\"
 "("             { return yylval_token('('); }
 ")"             { return yylval_token(')'); }
 ","             { return yylval_token(','); }
+"."             { return yylval_token('.'); }
 .               { return yylval_token(TOK_ERROR); }
 
 %%
