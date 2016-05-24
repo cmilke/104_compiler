@@ -56,24 +56,43 @@ void deal_with_arguments (int argc, char** argv, vector<string> &files, string &
 
 
 void depth_first_print(FILE* tok_f, FILE* ast_f, FILE* sym_f, int depth, astree* root) {
+    string attrs[] = { "void", "bool", "char", "int", "null",
+                       "string",   "struct", "array",  "function",
+                       "variable", "field",  "typeid", "param",
+                       "lval",     "const",  "vreg",   "vaddr" };
+
+
+
     fprintf (tok_f, "%2ld  %02ld.%03ld  %3d  %-15s  (%s)\n",
             root->filenr, root->linenr, root->offset, root->symbol,
             get_yytname(root->symbol), root->lexinfo->c_str());
 
 
     for(int indentI = 0; indentI < depth; indentI++) fprintf(ast_f, "|    ");
-    fprintf(ast_f, "%s  \"%s\"  %ld.%ld.%ld {%ld} %05lX\n",
+    fprintf(ast_f, "%s  \"%s\"  %ld.%ld.%ld {%ld}",
             get_yytname(root->symbol), root->lexinfo->c_str(),
             root->filenr, root->linenr, root->offset,
-            root->block_nr, root->attributes.to_ulong() );
+            root->block_nr);
+
+    for ( size_t i = 0; i < root->attributes.size(); i++ ) {
+        if (root -> attributes[i]) {
+            fprintf( ast_f, " %s", attrs[16-i].c_str() ); //FIXME:once you flip the bits around, remove the 16
+        }
+    } fprintf( ast_f, "\n");
 
 
     if ( root->is_symbol) {
         for(int indentI = 0; indentI < depth; indentI++) fprintf(sym_f, "   ");
-        fprintf(sym_f, "%s (%ld.%ld.%ld) {%ld} %05lX\n",
+        fprintf(sym_f, "%s (%ld.%ld.%ld) {%ld}",
                 root->lexinfo->c_str(),
                 root->filenr, root->linenr, root->offset,
-                root->block_nr, root->attributes.to_ulong() );
+                root->block_nr);
+
+        for ( size_t i = 0; i < root->attributes.size(); i++ ) {
+            if (root -> attributes[i]) {
+                fprintf( sym_f, " %s", attrs[16-i].c_str() ); //FIXME:once you flip the bits around, remove the 16
+            }
+        } fprintf( sym_f, "\n");
     }
 
     for(auto tree : root->children) {
