@@ -105,8 +105,9 @@ symbol* retrieve_symbol(astree* root) {
         i--;
         symbol_table* table = symbol_stack[i];
         if ( table == nullptr ) continue;
-        if ( table->find(key) != table->end()) 
+        if ( table->find(key) != table->end()) {
             return table->at(key);
+        }
     } while(i > 0);
 
     return nullptr;
@@ -290,6 +291,7 @@ void activate_function(astree* root, vector<symbol*>* params) {
         invoke_switchboard(child);
     }
 
+    symbol_stack.pop_back();
     block_stack.pop_back();
 }
 
@@ -417,6 +419,7 @@ attr_bitset switch_tok_block( astree* root ) {
         invoke_switchboard(child);
     }
 
+    symbol_stack.pop_back();
     block_stack.pop_back();
     return 0;
 }
@@ -427,27 +430,25 @@ attr_bitset switch_tok_call( astree* root ) {
     symbol* fun = retrieve_symbol(root->children[0]);
     if ( fun == nullptr ) return -1;
 
-    vector<attr_bitset> bitlist;
-    size_t num_children = root->children.size();
-    for ( size_t i = 1; i < num_children; i++ ) {
-        astree* child = root->children[i];
-        attr_bitset childtype = invoke_switchboard(child);
-        bitlist.push_back(childtype);
-    }
-
     vector<symbol*>* params = fun->parameters;
+    size_t len = root->children.size();
 
-    size_t len = bitlist.size();
-    if ( len != params->size() ) {
-        string error = "FUNCTION PARAMETERS DO NOT MATCH";
+    if ( len-1 != params->size() ) {
+        string error = "FUNCTION PARAMETERS ARE OF DIFFERENT LENGTHS";
         throw_error(root,fun,error);
     }
 
-    for (size_t i = 0; i < len; i++) {
-        attr_bitset bits1 = bitlist[i];
-        attr_bitset bits2 = params->at(i)->attributes;
+    for (size_t i = 0; i < len-1; i++) {
+        astree* child = root->children[i+1];
+        attr_bitset bits1 = invoke_switchboard(child);
+        symbol* ident1 = nullptr;
+        if ( bits1.test(5) ) ident1 = retrieve_symbol(child)->identifier;
 
-        if ( (bits1&typemask) != (bits2&typemask) ) {
+        symbol* orig  = params->at(i);
+        symbol* ident2 = orig->identifier;
+        attr_bitset bits2 = orig->attributes;
+
+        if ( (bits1&typemask) != (bits2&typemask) || ident1 != ident2 ) {
             string error = "FUNCTION PARAMETERS DO NOT MATCH";
             throw_error(root,fun,error);
         }
