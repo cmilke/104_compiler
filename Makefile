@@ -15,7 +15,7 @@ EXTRA    = README Makefile check.bash
 SOURCE   = ${CPPFILES} ${HEADERS} ${FLEXSRC} ${BISONSRC} ${EXTRA}
 
 OBJECTS  = astree.o auxlib.o lyutils.o stringset.o symtable.o typechecking.o yylex.o yyparse.o oilgen.o
-PRODUCTS = *.str *.tok *.ast *.sym *.log ${F_B_OUT}
+PRODUCTS = *.str *.tok *.ast *.sym *.log
 
 COMPILE  = g++ -g -O0 -Wall -Wextra -std=gnu++14 -o
 FLEX     = flex --header-file=${LEXH} --outfile=${LEXC}
@@ -29,15 +29,18 @@ oc: oc.cpp deps
 
 deps: ${PARSEHDR} ${LEXH} ${OBJECTS} 
 
+nice:
+	-rm ${PRODUCTS} 2> /dev/null
 
-clean:
-	-rm ${OBJECTS} ${PRODUCTS} 2> /dev/null
+clean: nice
+	-rm ${OBJECTS} ${F_B_OUT} 2> /dev/null
 
 spotless: clean
 	-rm oc 2> /dev/null
 
 check: oc check.bash
 	./check.bash
+	@make -s nice
 
 
 submit: ${SOURCE} ci

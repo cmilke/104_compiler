@@ -52,6 +52,7 @@ STRING          \"({LETTER}|{DIGIT}|{ESCAPE}|{MISC})*\"
 ">"             { return yylval_token(TOK_GT); }
 ">="            { return yylval_token(TOK_GE); }
 "[]"            { return yylval_token(TOK_ARRAY); }
+"!"             { return yylval_token('!'); }
 "+"             { return yylval_token('+'); }
 "-"             { return yylval_token('-'); }
 "*"             { return yylval_token('*'); }

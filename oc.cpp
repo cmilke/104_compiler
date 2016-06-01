@@ -153,7 +153,7 @@ int main (int argc, char** argv) {
             global_container* globals = create_symbol_table(yyparse_astree);
             if (ERROR_THROWN) {
                 fprintf(stderr, "\nCOMPILATION FAILED\n");
-                exit(1);
+                //exit(1);
             }
 
             make_output_files(filename);

@@ -27,7 +27,8 @@ attr_bitset _current_function_value = 0;
 global_container* _globals;
 
 
-attr_bitset typemask = attr_bitset(0x1fe20);
+attr_bitset _typemask = attr_bitset(0x1fe20);
+attr_bitset _address =  attr_bitset(0x00001);
 
 
 global_container* create_symbol_table(astree* yyparse_astree) {
@@ -53,6 +54,7 @@ attr_bitset invoke_switchboard(astree* root) {
         case '*':
         case '/':
         case '%':            return int_op(root); break;
+        case '!':            return switch_tok_not(root); break;
         case '=':            return switch_assignment(root); break;
         case '[':            return array_access(root); break;
         case '.':            return selector_access(root); break;
@@ -146,7 +148,9 @@ attr_bitset update_node( astree* root, unsigned long val ) {
 attr_bitset get_declid_type( astree* declid, attr_bitset mask, symbol** sympoint ) {
     attr_bitset dectype = invoke_switchboard(declid->children[0]);
     int is_array = declid->children.size() - 1;
-    if (is_array) dectype |= attr_bitset(0x00200);
+    if (is_array) dectype |= attr_bitset(0x00201);
+    if (dectype.test(5)) dectype |= attr_bitset(0x00001);
+    if (dectype.test(11)) dectype |= attr_bitset(0x00001);
 
     if ( dectype.test(5) ) {
         *sympoint = retrieve_symbol(declid->children[0]);
@@ -225,7 +229,7 @@ bool check_parameters( vector<symbol*>* first, vector<symbol*>* second) {
 
 vector<symbol*>* generate_params( astree* paramlist ) {
     vector<symbol*>* params = new vector<symbol*>;
-    attr_bitset var_mask = attr_bitset(0x00010);
+    attr_bitset var_mask = attr_bitset(0x00018);
 
     for ( astree* child : paramlist->children ) {
         symbol* symident = nullptr;
@@ -244,12 +248,16 @@ attr_bitset update_binary( astree* root, attr_bitset ltype ) {
     astree* rval = root->children[1];
     attr_bitset rtype = invoke_switchboard(rval);
 
-    if ( (ltype&typemask) != (rtype&typemask) ) {
+    if ( (  ltype.test(0)    &&  rtype.test(12)   ) ||
+         ( (ltype&_typemask) == (rtype&_typemask) ) ) {
+
+        return update_node(root,ltype);
+    
+    } else {
         string error = "BINARY OPERATOR USED ACROSS DIFFERENT TYPES";
         throw_error(lval,rval,error);
+        return -1;
     }
-
-    return update_node(root,ltype);
 }
 
 
@@ -269,8 +277,8 @@ attr_bitset equivalent_op( astree* root ) {
 
 attr_bitset inequivalent_op( astree* root ) {
     attr_bitset optype = update_binary(root);
-    if ( (optype&typemask) != attr_bitset(0x04000) &&
-         (optype&typemask) != attr_bitset(0x02000) ) {
+    if ( (optype&_typemask) != attr_bitset(0x04000) &&
+         (optype&_typemask) != attr_bitset(0x02000) ) {
         string error = "CANNOT COMPARE NON-PRIMITIVE TYPES";
         throw_error ( root->children[0], root->children[1], error);
     }
@@ -281,7 +289,7 @@ attr_bitset inequivalent_op( astree* root ) {
 
 attr_bitset int_op( astree* root ) {
     attr_bitset optype = update_binary(root);
-    if ( (optype&typemask) != attr_bitset(0x02000) ) {
+    if ( (optype&_typemask) != attr_bitset(0x02000) ) {
         string error = "INT OPERATOR USED ON NON-INT TYPES";
         throw_error ( root->children[0], root->children[1], error);
     }
@@ -291,10 +299,10 @@ attr_bitset int_op( astree* root ) {
 
 
 attr_bitset unary_op( astree* root ) {
-    astree* rval = root->children[1];
+    astree* rval = root->children[0];
     attr_bitset rtype = invoke_switchboard(rval);
 
-    if ( (rtype&typemask) != attr_bitset(0x02000) ) {
+    if ( (rtype&_typemask) != attr_bitset(0x02000) ) {
         string error = "INT OPERATOR USED ON NON-INT TYPE";
         throw_error ( root->children[0], error);
     }
@@ -307,7 +315,7 @@ attr_bitset unary_op( astree* root ) {
 attr_bitset branch_op( astree* root ) {
     attr_bitset arg = invoke_switchboard(root->children[0]);
 
-    if ( (arg&typemask) != attr_bitset(0x08000) ) {
+    if ( (arg&_typemask) != attr_bitset(0x08000) ) {
         string error = "STATEMENT REQUIRES BOOLEAN ARGUMENT";
         throw_error ( root->children[0], error);
     }
@@ -352,7 +360,7 @@ attr_bitset switch_assignment( astree* root ) {
 attr_bitset switch_tok_return( astree* root ) {
     attr_bitset rettype = invoke_switchboard(root->children[0]);
 
-    if ( (rettype&typemask) != (_current_function_value&typemask) ) {
+    if ( (rettype&_typemask) != (_current_function_value&_typemask) ) {
         string error = "INCORRECT RETURN TYPE";
         throw_error(root,error);
     }
@@ -365,7 +373,7 @@ attr_bitset switch_tok_return( astree* root ) {
 attr_bitset switch_tok_returnvoid( astree* root ) {
     attr_bitset rettype = attr_bitset(0x10000);
 
-    if ( (rettype&typemask) != (_current_function_value&typemask) ) {
+    if ( (rettype&_typemask) != (_current_function_value&_typemask) ) {
         string error = "INCORRECT RETURN TYPE";
         throw_error(root,error);
     }
@@ -426,14 +434,14 @@ attr_bitset switch_tok_new( astree* root ) {
 attr_bitset switch_tok_ident( astree* root ) {
     symbol* orig = retrieve_symbol(root);
     if ( orig == nullptr ) return -1;
-    return update_node(root,orig->attributes);
+    return update_node(root,orig->attributes | _address);
 }
 
 
 
 attr_bitset switch_tok_stringcon( astree* root ) {
     _globals->stringconsts->push_back(root);
-    return update_node(root,0x00804);
+    return update_node(root,0x00805);
 }
 
 
@@ -476,7 +484,7 @@ attr_bitset switch_tok_call( astree* root ) {
         symbol* ident2 = orig->identifier;
         attr_bitset bits2 = orig->attributes;
 
-        if ( (bits1&typemask) != (bits2&typemask) || ident1 != ident2 ) {
+        if ( (bits1&_typemask) != (bits2&_typemask) || ident1 != ident2 ) {
             string error = "FUNCTION PARAMETERS DO NOT MATCH";
             throw_error(root,fun,error);
         }
@@ -490,7 +498,7 @@ attr_bitset switch_tok_call( astree* root ) {
 attr_bitset switch_tok_ifelse( astree* root ) {
     attr_bitset arg = invoke_switchboard(root->children[0]);
 
-    if ( (arg&typemask) != attr_bitset(0x08000) ) {
+    if ( (arg&_typemask) != attr_bitset(0x08000) ) {
         string error = "STATEMENT REQUIRES BOOLEAN ARGUMENT";
         throw_error ( root->children[0], error);
     }
@@ -508,7 +516,7 @@ attr_bitset switch_tok_newarray( astree* root ) {
     attr_bitset base_bits = invoke_switchboard(base);
     attr_bitset size_bits = invoke_switchboard(size);
 
-    if ( (size_bits&typemask) != attr_bitset(0x02000) ) {
+    if ( (size_bits&_typemask) != attr_bitset(0x02000) ) {
         string error = "NEW ARRAY SIZE MUST BE OF TYPE INT";
         throw_error ( root, size, error);
     }
@@ -526,18 +534,23 @@ attr_bitset array_access( astree* root ) {
     attr_bitset ident_bits = invoke_switchboard(ident);
     attr_bitset size_bits  = invoke_switchboard(size);
 
-    if ( (size_bits&typemask) != attr_bitset(0x02000) ) {
+    if ( (size_bits&_typemask) != attr_bitset(0x02000) ) {
         string error = "NEW ARRAY SIZE MUST BE OF TYPE INT";
         throw_error ( root, size, error);
     }
 
-    if ( !ident_bits.test(9) ) {
-        string error = "IDENTIFIER IS NOT AN ARRAY";
+    if ( !ident_bits.test(9) && !ident_bits.test(11) ) {
+        string error = "IDENTIFIER IS NEITHER AN ARRAY NOR A STRING";
         throw_error ( ident, error);
     }
 
     attr_bitset arr_bits = ident_bits;
     arr_bits &= attr_bitset(0x1fdff);
+    if ( !ident_bits.test(9) && ident_bits.test(11) ) {
+        arr_bits &= attr_bitset(0x1f7ff);
+        arr_bits |= attr_bitset(0x04000);
+
+    }
     arr_bits |= attr_bitset(0x00008);
     return update_node( root, arr_bits );
 }
@@ -624,16 +637,38 @@ attr_bitset switch_tok_typeid( astree* root ) {
 
 
 
+attr_bitset switch_tok_not( astree* root ) {
+    attr_bitset optype = invoke_switchboard(root->children[0]);
+
+    if ( (optype&_typemask) != attr_bitset(0x08000) ) {
+        string error = "ORD OPERATOR USED ON NON-CHAR TYPES";
+        throw_error ( root->children[0], error);
+    }
+    return update_node(root,0x08002);
+}
+
+
+
 attr_bitset switch_tok_ord( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
+    attr_bitset optype = invoke_switchboard(root->children[0]);
+
+    if ( (optype&_typemask) != attr_bitset(0x04000) ) {
+        string error = "ORD OPERATOR USED ON NON-CHAR TYPES";
+        throw_error ( root->children[0], error);
+    }
+    return update_node(root,0x02002);
 }
 
 
 
 attr_bitset switch_tok_chr( astree* root ) {
-    printf("UNIMPLEMENTED %s\n",get_yytname(root->symbol));
-    return -1;
+    attr_bitset optype = invoke_switchboard(root->children[0]);
+
+    if ( (optype&_typemask) != attr_bitset(0x02000) ) {
+        string error = "CHR OPERATOR USED ON NON-INT TYPES";
+        throw_error ( root->children[0], error);
+    }
+    return update_node(root,0x04002);
 }
 
 

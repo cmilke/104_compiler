@@ -69,6 +69,10 @@ int yylval_token (int symbol) {
    int offset = scan_offset - yyleng;
    yylval = new astree (symbol, included_filenames.size() - 1,
                         scan_linenr, offset, 0, 0, yytext,false,nullptr);
+    
+    if (symbol == TOK_ERROR) {
+        fprintf(stderr,"\nERROR TOKEN: %s\n\n", yytext);
+    }
    return symbol;
 }
 
