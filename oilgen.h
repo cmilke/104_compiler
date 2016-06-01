@@ -15,4 +15,6 @@ struct global_container {
 };
 
 
+void generate_oil_file(astree* root, global_container* globals);
+
 #endif

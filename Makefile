@@ -1,5 +1,5 @@
 CPPFILES = astree.cpp auxlib.cpp lyutils.cpp oc.cpp stringset.cpp symtable.cpp typechecking.cpp oilgen.cpp
-HEADERS  = astree.h auxlib.h lyutils.h stringset.h sym_switch_functions.h symtable.h typechecking.h oilgen.h
+HEADERS  = astree.h auxlib.h lyutils.h stringset.h sym_switch_functions.h symtable.h typechecking.h oilgen.h oil_switch_functions.h
 
 FLEXSRC  = scanner.l
 BISONSRC = parser.y

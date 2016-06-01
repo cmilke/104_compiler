@@ -750,8 +750,10 @@ attr_bitset switch_tok_vardecl( astree* root ) {
         throw_error(new_node,symtable->at(key),error);
     } else {
         symtable->emplace(lval->lexinfo,new_node);
-        _globals->variables->push_back(lval);
         lval->is_symbol = true;
+        if (block_stack.back() == 0) {
+            _globals->variables->push_back(lval);
+        }
     }
 
     return update_binary(root,ltype);
