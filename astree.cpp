@@ -1,22 +1,23 @@
-
 #include <assert.h>
-#include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+using namespace std;
 
 #include "astree.h"
-#include "stringset.h"
+#include "auxlib.h"
 #include "lyutils.h"
+#include "stringset.h"
+
+
 
 astree::astree (int symbol, int filenr, int linenr, int offset,
                 size_t block_nr, attr_bitset attributes, const char* clexinfo,
-                bool is_symbol):
+                bool is_symbol, struct symbol* declid):
         symbol (symbol), filenr (filenr), linenr (linenr),
         offset (offset), block_nr (block_nr),
         attributes( attributes ), lexinfo (intern_stringset (clexinfo) ),
-        is_symbol( is_symbol ) {
+        is_symbol( is_symbol ), declid( declid ) {
 
     DEBUGF ('f', "astree %p->{%d:%d.%d: %s: \"%s\"}\n",
             (void*) this, filenr, linenr, offset,

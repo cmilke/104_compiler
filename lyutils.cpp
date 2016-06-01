@@ -1,16 +1,15 @@
-
 #include <vector>
-#include <string>
-using namespace std;
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+using namespace std;
 
-#include "lyutils.h"
+#include "astree.h"
 #include "auxlib.h"
+#include "auxlib.h"
+#include "lyutils.h"
 #include "yylex.h"
 
 astree* yyparse_astree = NULL;
@@ -69,7 +68,7 @@ void lexer_badtoken (char* lexeme) {
 int yylval_token (int symbol) {
    int offset = scan_offset - yyleng;
    yylval = new astree (symbol, included_filenames.size() - 1,
-                        scan_linenr, offset, 0, 0, yytext,false);
+                        scan_linenr, offset, 0, 0, yytext,false,nullptr);
    return symbol;
 }
 
@@ -77,20 +76,21 @@ int yylval_token (int symbol) {
 astree* get_newtree(int symbol) {
    int offset = scan_offset - yyleng;
    astree* newtree = new astree (symbol, included_filenames.size() - 1,
-                        scan_linenr, offset, 0, 0, yytext, false);
+                        scan_linenr, offset, 0, 0, yytext, false,nullptr);
    return newtree;
 }
 
 
 astree* new_parseroot (void) {
-   yyparse_astree = new astree (TOK_ROOT, 0, 0, 0, 0, 0, "TREE_ROOT", false);
+   yyparse_astree = new astree (TOK_ROOT, 0, 0, 0, 0, 0,
+                                "TREE_ROOT", false,nullptr);
    return yyparse_astree;
 }
 
 
 astree* new_treeroot (int symbol, string lexicalinfo) {
    astree* newroot = new astree (symbol, 0, 0, 0, 0, 0,
-            lexicalinfo.c_str(), false);
+                    lexicalinfo.c_str(), false,nullptr);
    return newroot;
 }
 

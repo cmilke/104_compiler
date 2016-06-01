@@ -6,7 +6,6 @@
 using namespace std;
 
 #include <stdio.h>
-
 #include "auxlib.h"
 
 const string* intern_stringset (const char*);

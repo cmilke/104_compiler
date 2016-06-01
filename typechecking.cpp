@@ -1,6 +1,12 @@
-#include <bitset>
-#include "typechecking.h"
+using namespace std;
+
+#include "astree.h"
 #include "symtable.h"
+#include "typechecking.h"
+
+
+bool ERROR_THROWN = false;
+
 
 
 void throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
@@ -15,6 +21,7 @@ void throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
         lex1->c_str(), type1.to_ulong(), filenr1, linenr1, offset1, block_nr1);
 
     fprintf(stderr,errormessage);
+    ERROR_THROWN = true;
 }
 
 
@@ -48,6 +55,7 @@ void throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
         lex2->c_str(), type2.to_ulong(), filenr2, linenr2, offset2, block_nr2);
 
     fprintf(stderr,errormessage);
+    ERROR_THROWN = true;
 }
 
 

@@ -1,12 +1,12 @@
 #ifndef __ASTREE_H__
 #define __ASTREE_H__
 
+#include <inttypes.h>
 #include <string>
 #include <vector>
-using namespace std;
 
-#include "auxlib.h"
 #include "typechecking.h"
+
 
 struct astree {
    int symbol;               // token code
@@ -15,12 +15,14 @@ struct astree {
    size_t offset;            // offset of token with current line
    size_t block_nr;          
    attr_bitset attributes;
-   const string* lexinfo;    // pointer to lexical information
-   vector<astree*> children; // children of this n-way node
+   const std::string* lexinfo;    // pointer to lexical information
+   std::vector<astree*> children; // children of this n-way node
    bool is_symbol;
+   struct symbol* declid;
    astree (int symbol, int filenr, int linenr,
            int offset, size_t block_nr, 
-           attr_bitset attributes, const char* clexinfo, bool is_symbol);
+           attr_bitset attributes, const char* clexinfo, 
+           bool is_symbol, struct symbol* declid);
 };
 
 // Append one child to the vector of children.

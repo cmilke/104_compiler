@@ -3,24 +3,17 @@
 
 using namespace std;
 
-#include "astree.h"
-#include "lyutils.h"
 #include "oilgen.h"
-#include "symtable.h"
-#include "typechecking.h"
-#include "yyparse.h"
-#include "sym_switch_functions.h"
+
+global_container::global_container() :
+    structures   ( new vector<astree*> ),
+    stringconsts ( new vector<astree*> ),
+    variables    ( new vector<astree*> ),
+    functions    ( new vector<astree*> ) {}
 
 
-//FIXME: every bitset value in this is backwards
-//figure out how to replace the hardcoded numbers
-//with the enum values; possibly: 
-//long unsigned double bit = (1<<ATTR_bool) | (1<<ATTR_function); ?
-// size_t^?
-//
-//remember that attr_bitset.test is NOT backwards!
 
-vector<symbol_table*> symbol_stack;
+/*vector<symbol_table*> symbol_stack;
 int block_number = 0;
 vector<int> block_stack;
 attr_bitset _current_function_value = 0;
@@ -32,7 +25,7 @@ attr_bitset typemask = attr_bitset(0x1fe20);
 
 global_container* create_symbol_table(astree* yyparse_astree) {
 
-    _globals = new global_container;
+    _globals = (global_container*) malloc( sizeof(global_container) );
 
     block_stack.push_back(block_number);
     symbol_stack.push_back(new symbol_table);
@@ -728,4 +721,4 @@ attr_bitset compile_error(astree* root) {
     string error = "UNKOWN ERROR ENCOUNTERED";
     throw_error(root, error);
     return -1;
-}
+}*/

@@ -8,8 +8,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-using namespace std;
-
 #include <errno.h>
 #include <libgen.h>
 #include <stdio.h>
@@ -17,13 +15,17 @@ using namespace std;
 #include <string.h>
 #include <unistd.h>
 #include <wait.h>
+using namespace std;
 
+#include "astree.h"
 #include "auxlib.h"
 #include "yylex.h"
 #include "lyutils.h"
 #include "yyparse.h"
 #include "stringset.h"
 #include "symtable.h"
+#include "oilgen.h"
+#include "typechecking.h"
 
 
 
@@ -146,9 +148,13 @@ int main (int argc, char** argv) {
 
             int pclose_rc = pclose (yyin);
             eprint_status (command.c_str(), pclose_rc);
-            if (pclose_rc != 0) set_exitstatus (EXIT_FAILURE);
+            if (pclose_rc != 0) exit(1);
 
-            create_symbol_table(yyparse_astree);
+            global_container* globals = create_symbol_table(yyparse_astree);
+            if (ERROR_THROWN) {
+                fprintf(stderr, "\nCOMPILATION FAILED\n");
+                exit(1);
+            }
 
             make_output_files(filename);
         }

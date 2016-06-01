@@ -1,5 +1,5 @@
-CPPFILES = astree.cpp auxlib.cpp lyutils.cpp oc.cpp stringset.cpp symtable.cpp typechecking.cpp
-HEADERS  = astree.h auxlib.h lyutils.h stringset.h switch_functions.h symtable.h typechecking.h
+CPPFILES = astree.cpp auxlib.cpp lyutils.cpp oc.cpp stringset.cpp symtable.cpp typechecking.cpp oilgen.cpp
+HEADERS  = astree.h auxlib.h lyutils.h stringset.h sym_switch_functions.h symtable.h typechecking.h oilgen.h
 
 FLEXSRC  = scanner.l
 BISONSRC = parser.y
@@ -11,11 +11,11 @@ PARSECPP = yyparse.cpp
 PARSEOUT = yyparse.output
 F_B_OUT  = ${LEXH} ${LEXC} ${PARSEHDR} ${PARSECPP} ${PARSEOUT}
 
-EXTRA    = README Makefile
+EXTRA    = README Makefile check.bash
 SOURCE   = ${CPPFILES} ${HEADERS} ${FLEXSRC} ${BISONSRC} ${EXTRA}
 
-OBJECTS  = astree.o auxlib.o lyutils.o stringset.o symtable.o typechecking.o yylex.o yyparse.o 
-PRODUCTS = *.str *.tok *.ast *.log ${F_B_OUT}
+OBJECTS  = astree.o auxlib.o lyutils.o stringset.o symtable.o typechecking.o yylex.o yyparse.o oilgen.o
+PRODUCTS = *.str *.tok *.ast *.sym *.log ${F_B_OUT}
 
 COMPILE  = g++ -g -O0 -Wall -Wextra -std=gnu++14 -o
 FLEX     = flex --header-file=${LEXH} --outfile=${LEXC}
@@ -35,6 +35,9 @@ clean:
 
 spotless: clean
 	-rm oc 2> /dev/null
+
+check: oc check.bash
+	./check.bash
 
 
 submit: ${SOURCE} ci
