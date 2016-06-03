@@ -104,7 +104,7 @@ void depth_first_print(FILE* tok_f, FILE* ast_f, FILE* sym_f, int depth, astree*
 
 
 
-void make_output_files(string filename) {
+FILE* make_output_files(string filename) {
     int delimit_i = filename.rfind(".");
     int delimit_j = filename.rfind("/");
     string output_base = filename.substr(0,delimit_i).substr(delimit_j+1);
@@ -112,18 +112,22 @@ void make_output_files(string filename) {
     string output_name_tok = output_base + ".tok";
     string output_name_ast = output_base + ".ast";
     string output_name_sym = output_base + ".sym";
+    string output_name_oil = output_base + ".oil";
 
 
-    FILE *str_f = fopen(output_name_str.c_str(), "w");
+    FILE* str_f = fopen(output_name_str.c_str(), "w");
     dump_stringset(str_f);
     fclose(str_f);
 
-    FILE *tok_f = fopen(output_name_tok.c_str(), "w");
-    FILE *ast_f = fopen(output_name_ast.c_str(), "w");
-    FILE *sym_f = fopen(output_name_sym.c_str(), "w");
+    FILE* tok_f = fopen(output_name_tok.c_str(), "w");
+    FILE* ast_f = fopen(output_name_ast.c_str(), "w");
+    FILE* sym_f = fopen(output_name_sym.c_str(), "w");
     depth_first_print(tok_f, ast_f, sym_f, 0, yyparse_astree);
     fclose(tok_f);
     fclose(ast_f);
+
+    FILE* oil_f = fopen(output_name_oil.c_str(), "w");
+    return oil_f;
 }
 
 
@@ -156,9 +160,9 @@ int main (int argc, char** argv) {
                 exit(1);
             }
 
-            make_output_files(filename);
+            FILE* oil_f = make_output_files(filename);
 
-            generate_oil_file(yyparse_astree,globals);
+            generate_oil_file(yyparse_astree,globals,oil_f);
         }
 
     }

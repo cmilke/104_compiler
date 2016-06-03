@@ -321,6 +321,7 @@ attr_bitset unary_op( astree* root ) {
 
 
 attr_bitset branch_op( astree* root ) {
+    update_node(root,0x00000);
     attr_bitset arg = invoke_switchboard(root->children[0]);
 
     if ( (arg&_typemask) != attr_bitset(0x08000) ) {
@@ -503,6 +504,7 @@ attr_bitset switch_tok_call( astree* root ) {
 
 
 attr_bitset switch_tok_ifelse( astree* root ) {
+    update_node(root,0x00000);
     attr_bitset arg = invoke_switchboard(root->children[0]);
 
     if ( (arg&_typemask) != attr_bitset(0x08000) ) {

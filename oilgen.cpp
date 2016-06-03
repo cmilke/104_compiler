@@ -37,7 +37,8 @@ const string get_declaration_type( astree* root ) {
     string type_name = "";
 
     attr_bitset bits = root->attributes;
-    if      ( bits.test(15) ) type_name += "char";
+    if      ( bits.test(16) ) type_name += "void";
+    else if ( bits.test(15) ) type_name += "char";
     else if ( bits.test(14) ) type_name += "char";
     else if ( bits.test(13) ) type_name += "int";
     else if ( bits.test(11) ) type_name += "char*";
@@ -117,18 +118,23 @@ void gen_functions( astree* fun_root ) {
     const string ident_type = get_declaration_type(ident);
     const string ident_name = "__" + *(ident->lexinfo);
 
-    _oil_text += ident_type + " " + ident_name + "(\n";
+    _oil_text += ident_type + " " + ident_name + "(";
     
     int last_param = params->children.size();
-    for ( int paramI = 0; paramI < last_param; paramI++ ) {
-        astree* param = params->children[paramI];
+    if ( last_param == 0 ) {
+        _oil_text += ")";
+    } else {
+        _oil_text += "\n";
+        for ( int paramI = 0; paramI < last_param; paramI++ ) {
+            astree* param = params->children[paramI];
 
-        const string param_type = get_declaration_type(param);
-        const string param_name = oil_switch_ident(param);
+            const string param_type = get_declaration_type(param);
+            const string param_name = oil_switch_ident(param);
 
-        _oil_text += _indent + param_type + " " + param_name;
-        if ( paramI == last_param-1 ) _oil_text += ")";
-        else _oil_text += ",\n";
+            _oil_text += _indent + param_type + " " + param_name;
+            if ( paramI == last_param-1 ) _oil_text += ")";
+            else _oil_text += ",\n";
+        }
     }
 
     if ( fun_root->symbol == TOK_PROTOTYPE ) {
@@ -136,17 +142,14 @@ void gen_functions( astree* fun_root ) {
 
     } else {
         _oil_text += "\n{\n";
-        for ( astree* line : block->children ) {
-            oil_invoke_switchboard(line);
-        }
+        oil_invoke_switchboard(block);
+        _oil_text += "}\n";
     }
 }
 
 
 
-void generate_oil_file(astree* root, global_container* globals) {
-    _oil_text += "#define __OCLIB_C__\n";
-    _oil_text += "#include \"oclib.oh\"\n";
+void generate_oil_file(astree* root, global_container* globals, FILE* oil_f) {
 
     //structures
     for ( astree* struct_root : *(globals->structures) ) {
@@ -180,7 +183,8 @@ void generate_oil_file(astree* root, global_container* globals) {
     }
     _oil_text += "}\n";
 
-    cout << _oil_text;
+    fprintf( oil_f, _oil_text.c_str() );
+    fclose(oil_f);
 }
 
 
@@ -205,14 +209,15 @@ const string oil_invoke_switchboard(astree* root) {
         case TOK_NULL:
         case TOK_FALSE:      return "0"; break;
         case TOK_TRUE:       return "1"; break;
+        case TOK_VOID:       return "void"; break;
         case TOK_INTCON:
         case TOK_CHARCON:    return *(root->lexinfo); break;
         case TOK_STRINGCON:  return oil_switch_stringcon(); break;
         case '[':            return oil_switch_array(root); break;
         case '.':            return oil_switch_selector(root); break; //TODO
-        case TOK_WHILE:      return oil_switch_while(root); break; //TODO
-        case TOK_IF:         return oil_switch_if(root); break; //TODO
-        case TOK_IFELSE:     return oil_switch_ifelse(root); break; //TODO
+        case TOK_WHILE:      return oil_switch_while(root); break;
+        case TOK_IF:         return oil_switch_if(root); break;
+        case TOK_IFELSE:     return oil_switch_ifelse(root); break;
         case TOK_NEW:        return oil_switch_new(root); break;
         case TOK_NEWSTRING:
         case TOK_NEWARRAY:   return oil_switch_newarray(root); break;
@@ -238,7 +243,8 @@ const string get_decl( astree* root ) {
     string type_name = "";
 
     attr_bitset bits = root->attributes;
-    if      ( bits.test(15) ) type_name += "char";
+    if      ( bits.test(16) ) type_name += "void";
+    else if ( bits.test(15) ) type_name += "char";
     else if ( bits.test(14) ) type_name += "char";
     else if ( bits.test(13) ) type_name += "int";
     else if ( bits.test(11) ) type_name += "char*";
@@ -334,12 +340,6 @@ const string oil_switch_declid( astree* root ) {
 
 
 
-const string oil_switch_variable( astree* root ) {
-    return "\nU_" + *(root->lexinfo) + "_U\n";
-}
-
-
-
 const string oil_switch_stringcon() {
     return "__s" + to_string(_s_const_reg++);
 }
@@ -371,19 +371,67 @@ const string oil_switch_selector( astree* root ) {
 
 
 const string oil_switch_while( astree* root ) {
-    return "\nU_" + *(root->lexinfo) + "_U\n";
+    astree* expr = root->children[0];
+    astree* block = root->children[1];
+
+    string sym = "_" + to_string(root->filenr);
+    sym += "_" + to_string(root->linenr);
+    sym += "_" + to_string(root->offset);
+
+    _oil_text += "while" + sym + ":;\n";
+
+    const string estring = oil_invoke_switchboard(expr);
+    _oil_text += _indent + "if (!" + estring + ") ";
+    _oil_text += "goto break" + sym + ";\n";
+
+    oil_invoke_switchboard(block);
+
+    _oil_text += _indent + "goto while" + sym + ";\n";
+    _oil_text += "break" + sym + ":;\n";
+    return "";
 }
 
 
 
 const string oil_switch_if( astree* root ) {
-    return "\nU_" + *(root->lexinfo) + "_U\n";
+    astree* expr = root->children[0];
+    astree* block = root->children[1];
+
+    const string estring = oil_invoke_switchboard(expr);
+    string sym = "_" + to_string(root->filenr);
+    sym += "_" + to_string(root->linenr);
+    sym += "_" + to_string(root->offset);
+
+    _oil_text += _indent + "if (!" + estring + ") ";
+    _oil_text += "goto fi" + sym + ";\n"; 
+
+    oil_invoke_switchboard(block);
+
+    _oil_text += "fi" + sym + ":;\n";
+    return "";
 }
 
 
 
 const string oil_switch_ifelse( astree* root ) {
-    return "\nU_" + *(root->lexinfo) + "_U\n";
+    astree* expr = root->children[0];
+    astree* ifblock = root->children[1];
+    astree* elseblock = root->children[2];
+
+    const string estring = oil_invoke_switchboard(expr);
+    string sym = "_" + to_string(root->filenr);
+    sym += "_" + to_string(root->linenr);
+    sym += "_" + to_string(root->offset);
+
+    _oil_text += _indent + "if (!" + estring + ") ";
+    _oil_text += "goto else" + sym + ";\n"; 
+
+    oil_invoke_switchboard(ifblock);
+    _oil_text += _indent + "goto fi" + sym + ";\n";
+    _oil_text += "else" + sym + ":;\n";
+    oil_invoke_switchboard(elseblock);
+    _oil_text += "fi" + sym + ":;\n";
+    return "";
 }
 
 
@@ -416,11 +464,9 @@ const string oil_switch_newarray( astree* root ) {
 
 
 const string oil_switch_block( astree* root ) {
-    _oil_text += _indent + "{\n";
     for ( astree* child : root->children ) {
         oil_invoke_switchboard(child);
     }
-    _oil_text += _indent + "}\n";
     return "";
 }
 
@@ -511,6 +557,3 @@ const string oil_switch_returnvoid() {
 const string oil_compile_error( astree* root ) {
     return "\nERROR! " + *(root->lexinfo) + "\n";
 }
-
-
-

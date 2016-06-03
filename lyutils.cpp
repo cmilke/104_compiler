@@ -66,7 +66,7 @@ void lexer_badtoken (char* lexeme) {
 }
 
 int yylval_token (int symbol) {
-   int offset = scan_offset - yyleng;
+   int offset = scan_offset;
    yylval = new astree (symbol, included_filenames.size() - 1,
                         scan_linenr, offset, 0, 0, yytext,false,nullptr);
     
@@ -78,7 +78,7 @@ int yylval_token (int symbol) {
 
 
 astree* get_newtree(int symbol) {
-   int offset = scan_offset - yyleng;
+   int offset = scan_offset;
    astree* newtree = new astree (symbol, included_filenames.size() - 1,
                         scan_linenr, offset, 0, 0, yytext, false,nullptr);
    return newtree;

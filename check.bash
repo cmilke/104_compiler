@@ -1,12 +1,17 @@
 #!/bin/bash
 
-for f in $(ls test/*.oc); do
+for f in $(ls test/*.oc | sed 's/.*\/\(.*\)\.oc/\1/'); do
     echo -n $f
-    ./oc $f > /dev/null 2>&1 
+    ./oc test/${f}.oc > /dev/null 2>&1 
     if (($?)); then 
-        echo '    FAILURE'
+        echo '    OC FAILURE'
     else 
-        echo
+        ./comp.bash $f > /dev/null 2>&1
+        if (($?)); then 
+            echo '    GCC FAILURE'
+        else
+            echo
+        fi
     fi
 done
      
