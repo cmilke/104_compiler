@@ -127,10 +127,10 @@ astree* create_allocator_ident(astree* tok_new, astree* tok_ident, astree* lpare
 }
 
 
-astree* create_allocator_string(astree* tok_new, astree* tok_string, astree* lparen, astree* rparen) {
+astree* create_allocator_string(astree* tok_new, astree* tok_string, astree* lparen, astree* expr, astree* rparen) {
     free_ast2(lparen,rparen);
     tok_new->symbol = TOK_NEWSTRING;
-    adopt1(tok_new,tok_string);
+    adopt2(tok_new,tok_string,expr);
     return tok_new;
 }
 
@@ -180,7 +180,7 @@ astree* create_call(astree* tok_ident, astree* lparen, astree* call_args, astree
 %left  '+' '-'
 %left  '*' '/' '%'
 %right TOK_POS TOK_NEG '!' TOK_NEW TOK_ORD TOK_CHR
-%left '.'
+%left '.' '['
 
 %start program
 
@@ -268,7 +268,7 @@ expr        : binop                                             { $$=$1; }
             | constant                                          { $$=$1; }
             ;
 allocator   : TOK_NEW TOK_IDENT '(' ')'                         { $$=create_allocator_ident($1,$2,$3,$4); }
-            | TOK_NEW TOK_STRING '(' ')'                        { $$=create_allocator_string($1,$2,$3,$4); }
+            | TOK_NEW TOK_STRING '(' expr ')'                   { $$=create_allocator_string($1,$2,$3,$4,$5); }
             | TOK_NEW basetype '[' expr ']'                     { $$=create_allocator_array($1,$2,$3,$4,$5); }
             ;
 call_args   : call_args expr                                    { $$=adopt1($1,$2); }

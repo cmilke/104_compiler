@@ -5,7 +5,7 @@ const string oil_invoke_switchboard(astree* root);
 
 const string oil_switch_binary(astree* root);
 const string oil_switch_assignment(astree* root); 
-const string oil_switch_stringcon(astree* root);
+const string oil_switch_stringcon();
 const string oil_switch_array(astree* root);
 const string oil_switch_selector(astree* root);
 const string oil_switch_while(astree* root);
@@ -22,7 +22,7 @@ const string oil_switch_vardecl(astree* root);
 const string oil_switch_ident( astree* root );
 const string oil_switch_declid( astree* root );
 const string oil_switch_return(astree* root);
-const string oil_switch_returnvoid(astree* root);
+const string oil_switch_returnvoid();
 const string oil_switch_newstring(astree* root);
 const string oil_compile_error(astree* root);
 

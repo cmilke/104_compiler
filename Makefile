@@ -61,20 +61,11 @@ yylex.o: ${LEXC} ${LEXH}
 	${COMPILE} $@ -c $< -Wno-sign-compare
 	
 
-${PARSECPP}: ${BISONSRC}
+${PARSEHDR}: ${BISONSRC}
 	${BISON} ${BISONSRC}
+
+${PARSECPP}: ${BISONHDR}
 	echo -e '1,$$!cpp -fpreprocessed -dD\nw\nq\n' | ex ${PARSEHDR}
-
-${PARSEHDR}: ${PARSECPP}
-
-#yyparse.o: ${PARSECPP} lyutils.h astree.h
-#	${COMPILE} $@ -c $<
-#
-#astree.h: t.h lyutils.h
-#	${COMPILE} $@ -c $<
-#
-#lyutils.h: auxlib.h astree.h ${LEXH} ${PARSEHDR}
-#	${COMPILE} $@ -c $<
 
 %.o: %.cpp %.h
 	${COMPILE} $@ -c $<

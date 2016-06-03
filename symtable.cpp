@@ -21,6 +21,7 @@ using namespace std;
 //remember that attr_bitset.test is NOT backwards!
 
 vector<symbol_table*> symbol_stack;
+symbol_table* _structs = new symbol_table;
 int block_number = 0;
 vector<int> block_stack;
 attr_bitset _current_function_value = 0;
@@ -94,7 +95,7 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_VARDECL:    return switch_tok_vardecl(root); break;
         case TOK_RETURN:     return switch_tok_return(root); break;
         case TOK_RETURNVOID: return switch_tok_returnvoid(root); break;
-        case TOK_NEWSTRING:  return update_node(root,0x00800); break;
+        case TOK_NEWSTRING:  return switch_tok_newstring(root); break;
         default:             return compile_error(root); break;
     }
 }
@@ -153,8 +154,15 @@ attr_bitset get_declid_type( astree* declid, attr_bitset mask, symbol** sympoint
     if (dectype.test(11)) dectype |= attr_bitset(0x00001);
 
     if ( dectype.test(5) ) {
-        *sympoint = retrieve_symbol(declid->children[0]);
-    } 
+        const string* key = declid->children[0]->lexinfo;
+        if (_structs->find(key) == _structs->end()) {
+            string error = "STRUCT NOT PREVIOUSLY DEFINED";
+            throw_error(declid,error);
+            return -1;
+        } else {
+            *sympoint = _structs->at(key);
+        }
+    }
 
     dectype |= mask;
     return update_node(declid,dectype);
@@ -386,10 +394,9 @@ attr_bitset switch_tok_returnvoid( astree* root ) {
 attr_bitset switch_tok_struct( astree* root ) {
     const string* key = root->children[0]->lexinfo;
 
-    symbol_table* symtable = symbol_stack[0];
-    if (symtable->find(key) != symtable->end()) {
+    if (_structs->find(key) != _structs->end()) {
         string error = "STRUCT PREVIOUSLY DEFINED";
-        throw_error(root,symtable->at(key),error);
+        throw_error(root,_structs->at(key),error);
         return -1;
 
     } else {
@@ -397,7 +404,7 @@ attr_bitset switch_tok_struct( astree* root ) {
         symbol_table* field_table = new symbol_table;
         symbol* new_struct = generate_symbol(root,bits,field_table,nullptr,nullptr);
         update_node(root->children[0],bits);
-        symtable->emplace(key, new_struct);
+        _structs->emplace(key, new_struct);
         _globals->structures->push_back(root);
         root->children[0]->is_symbol = true;
 
@@ -522,6 +529,24 @@ attr_bitset switch_tok_newarray( astree* root ) {
     }
 
     return update_node( root, base_bits|attr_bitset(0x00200) );
+}
+
+
+
+
+attr_bitset switch_tok_newstring( astree* root ) {
+    astree* base = root->children[0];
+    astree* size = root->children[1];
+
+    attr_bitset base_bits = invoke_switchboard(base);
+    attr_bitset size_bits = invoke_switchboard(size);
+
+    if ( (size_bits&_typemask) != attr_bitset(0x02000) ) {
+        string error = "NEW STRING SIZE MUST BE OF TYPE INT";
+        throw_error ( root, size, error);
+    }
+
+    return update_node( root, base_bits|attr_bitset(0x00800) );
 }
 
 
@@ -699,7 +724,6 @@ attr_bitset switch_tok_function( astree* root ) {
                 if (is_function) {
                     if ( !prevbits.test(8) ) {
                         symtable->emplace(key,newsym);
-                        _globals->functions->push_back(root);
                         declid->is_symbol = true;
                         _current_function_value = newsym->attributes;
                         activate_function(root->children[2],params);
@@ -720,7 +744,6 @@ attr_bitset switch_tok_function( astree* root ) {
     } else {
         if (is_function) {
             symtable->emplace(key,newsym);
-            _globals->functions->push_back(root);
             declid->is_symbol = true;
             _current_function_value = newsym->attributes;
             activate_function(root->children[2],params);
@@ -731,6 +754,7 @@ attr_bitset switch_tok_function( astree* root ) {
         }
     }
 
+    _globals->functions->push_back(root);
     return update_node(root,dectype);
 }
 

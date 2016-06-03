@@ -35,6 +35,7 @@ attr_bitset switch_tok_block( astree* root );
 attr_bitset switch_tok_call( astree* root );
 attr_bitset switch_tok_ifelse( astree* root );
 attr_bitset switch_tok_newarray( astree* root );
+attr_bitset switch_tok_newstring( astree* root );
 attr_bitset array_access( astree* root );
 symbol* selector_recursion( astree* root );
 attr_bitset selector_access( astree* root );
