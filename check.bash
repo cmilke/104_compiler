@@ -6,7 +6,7 @@ for f in $(ls test/*.oc | sed 's/.*\/\(.*\)\.oc/\1/'); do
     if (($?)); then 
         echo '    OC FAILURE'
     else 
-        ./comp.bash $f > /dev/null 2>&1
+        ./compile.bash $f > /dev/null 2>&1
         if (($?)); then 
             echo '    GCC FAILURE'
         else

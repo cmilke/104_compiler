@@ -30,6 +30,7 @@ global_container* _globals;
 
 attr_bitset _typemask = attr_bitset(0x1fe20);
 attr_bitset _address =  attr_bitset(0x00001);
+attr_bitset _error   =  attr_bitset(0x20000);
 
 
 global_container* create_symbol_table(astree* yyparse_astree) {
@@ -88,8 +89,8 @@ attr_bitset invoke_switchboard(astree* root) {
         case TOK_POS:        return unary_op(root); break;
         case TOK_NEWARRAY:   return switch_tok_newarray(root); break;
         case TOK_TYPEID:     return switch_tok_typeid(root); break;
-        case TOK_ORD:        return switch_tok_ord(root); break; //TODO
-        case TOK_CHR:        return switch_tok_chr(root); break; //TODO
+        case TOK_ORD:        return switch_tok_ord(root); break;
+        case TOK_CHR:        return switch_tok_chr(root); break;
         case TOK_PROTOTYPE:
         case TOK_FUNCTION:   return switch_tok_function(root); break;
         case TOK_VARDECL:    return switch_tok_vardecl(root); break;
@@ -157,8 +158,7 @@ attr_bitset get_declid_type( astree* declid, attr_bitset mask, symbol** sympoint
         const string* key = declid->children[0]->lexinfo;
         if (_structs->find(key) == _structs->end()) {
             string error = "STRUCT NOT PREVIOUSLY DEFINED";
-            throw_error(declid,error);
-            return -1;
+            return throw_error(declid,error);
         } else {
             *sympoint = _structs->at(key);
         }
@@ -209,6 +209,7 @@ symbol* generate_symbol( astree* tree, attr_bitset node_type,
         new_node->block_nr = block_stack.back();
         new_node->parameters = new_parameters;
         new_node->identifier = ident;
+        new_node->parent_structure = nullptr;
 
         return new_node;
 }
@@ -263,8 +264,7 @@ attr_bitset update_binary( astree* root, attr_bitset ltype ) {
     
     } else {
         string error = "BINARY OPERATOR USED ACROSS DIFFERENT TYPES";
-        throw_error(lval,rval,error);
-        return -1;
+        return throw_error(lval,rval,error);
     }
 }
 
@@ -397,13 +397,13 @@ attr_bitset switch_tok_struct( astree* root ) {
 
     if (_structs->find(key) != _structs->end()) {
         string error = "STRUCT PREVIOUSLY DEFINED";
-        throw_error(root,_structs->at(key),error);
-        return -1;
+        return throw_error(root,_structs->at(key),error);
 
     } else {
         attr_bitset bits = attr_bitset(0x00420);
         symbol_table* field_table = new symbol_table;
         symbol* new_struct = generate_symbol(root,bits,field_table,nullptr,nullptr);
+        new_struct->key = key;
         update_node(root->children[0],bits);
         _structs->emplace(key, new_struct);
         _globals->structures->push_back(root);
@@ -419,11 +419,11 @@ attr_bitset switch_tok_struct( astree* root ) {
 
             if (field_table->find(field_name) != field_table->end()) {
                 string error = "FIELD ALREADY DECLARED IN STRUCT";
-                throw_error(field_table->at(field_name),new_field,error);
-                return -1;
+                return throw_error(field_table->at(field_name),new_field,error);
             } else {
                 field->is_symbol = true;
                 field_table->emplace(field_name, new_field);
+                new_field->parent_structure = new_struct;
             }
         }
 
@@ -441,7 +441,10 @@ attr_bitset switch_tok_new( astree* root ) {
 
 attr_bitset switch_tok_ident( astree* root ) {
     symbol* orig = retrieve_symbol(root);
-    if ( orig == nullptr ) return -1;
+    if ( orig == nullptr ) {
+        string error = "SYMBOL NOT PREVIOUSLY DEFINED";
+        return throw_error(root,error);
+    }
     return update_node(root,orig->attributes | _address);
 }
 
@@ -472,7 +475,7 @@ attr_bitset switch_tok_block( astree* root ) {
 
 attr_bitset switch_tok_call( astree* root ) {
     symbol* fun = retrieve_symbol(root->children[0]);
-    if ( fun == nullptr ) return -1;
+    if ( fun == nullptr ) return _error;
 
     vector<symbol*>* params = fun->parameters;
     size_t len = root->children.size();
@@ -482,13 +485,13 @@ attr_bitset switch_tok_call( astree* root ) {
         throw_error(root,fun,error);
     }
 
-    for (size_t i = 0; i < len-1; i++) {
-        astree* child = root->children[i+1];
+    for (size_t i = 1; i < len; i++) {
+        astree* child = root->children[i];
         attr_bitset bits1 = invoke_switchboard(child);
         symbol* ident1 = nullptr;
         if ( bits1.test(5) ) ident1 = retrieve_symbol(child)->identifier;
 
-        symbol* orig  = params->at(i);
+        symbol* orig  = params->at(i-1);
         symbol* ident2 = orig->identifier;
         attr_bitset bits2 = orig->attributes;
 
@@ -590,11 +593,15 @@ symbol* selector_recursion( astree* root ) {
     symbol* struct_sym = nullptr;
     if (struct_tree->symbol == '.') {
         struct_sym = selector_recursion(struct_tree);
+        if ( struct_sym == nullptr ) return nullptr;
 
     } else {
         struct_sym = retrieve_symbol(struct_tree);
-        if ( struct_sym == nullptr ) return nullptr;
-        update_node( struct_tree, struct_sym->attributes ); 
+        if ( struct_sym == nullptr ) {
+            string error = "SYMBOL NOT PREVIOUSLY DEFINED";
+            throw_error(struct_tree,error);
+            return nullptr;
+        }
     }
 
     symbol* struct_def = struct_sym->identifier;
@@ -612,6 +619,7 @@ symbol* selector_recursion( astree* root ) {
 
     attr_bitset field_bits = field->attributes | attr_bitset(0x00008);
     update_node( selector, field_bits );
+    selector->declid = field;
 
     attr_bitset selector_bits = field_bits | attr_bitset(0x00002);
     update_node( root, selector_bits );
@@ -627,11 +635,13 @@ attr_bitset selector_access( astree* root ) {
     symbol* struct_sym = nullptr;
     if (struct_tree->symbol == '.') {
         struct_sym = selector_recursion(struct_tree);
-
+        if ( struct_sym == nullptr ) return _error;
     } else {
         struct_sym = retrieve_symbol(struct_tree);
-        if ( struct_sym == nullptr ) return -1;
-        update_node( struct_tree, struct_sym->attributes ); 
+        if ( struct_sym == nullptr ) {
+            string error = "SYMBOL NOT PREVIOUSLY DEFINED";
+            return throw_error(struct_tree,error);
+        }
     }
 
     symbol* struct_def = struct_sym->identifier;
@@ -642,13 +652,13 @@ attr_bitset selector_access( astree* root ) {
     symbol_table* field_table = struct_def->fields;
     if ( field_table->find(field_key) == field_table->end()) {
         string error = "FIELD DOES NOT EXIST FOR GIVEN STRUCTURE";
-        throw_error( struct_tree, selector, error );
-        return -1;
+        return throw_error( struct_tree, selector, error );
     }
     symbol* field = field_table->at(field_key);
 
     attr_bitset field_bits = field->attributes | attr_bitset(0x00008);
     update_node( selector, field_bits );
+    selector->declid = field;
 
     attr_bitset selector_bits = field_bits | attr_bitset(0x00002);
     return update_node( root, selector_bits );
@@ -657,9 +667,14 @@ attr_bitset selector_access( astree* root ) {
 
 
 attr_bitset switch_tok_typeid( astree* root ) {
-    symbol* ident = retrieve_symbol(root);
-    if ( ident == nullptr ) return -1;
-    return update_node(root,ident->attributes);
+    const string* key = root->lexinfo;
+    if (_structs->find(key) == _structs->end()) {
+        string error = "STRUCT NOT PREVIOUSLY DEFINED";
+        return throw_error(root,error);
+    } else {
+        symbol* ident = _structs->at(key);
+        return update_node(root,ident->attributes);
+    }
 }
 
 
@@ -789,6 +804,5 @@ attr_bitset switch_tok_vardecl( astree* root ) {
 
 attr_bitset compile_error(astree* root) {
     string error = "UNKOWN ERROR ENCOUNTERED";
-    throw_error(root, error);
-    return -1;
+    return throw_error(root, error);
 }

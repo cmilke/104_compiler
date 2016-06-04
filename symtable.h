@@ -19,6 +19,7 @@ struct symbol {
     size_t block_nr;
     std::vector<symbol*>* parameters;
     symbol* identifier;
+    symbol* parent_structure;
 };
 
 struct global_container;

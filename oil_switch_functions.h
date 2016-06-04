@@ -21,6 +21,7 @@ const string oil_switch_chr(astree* root);
 const string oil_switch_vardecl(astree* root);
 const string oil_switch_ident( astree* root );
 const string oil_switch_declid( astree* root );
+const string oil_switch_field( astree* root );
 const string oil_switch_return(astree* root);
 const string oil_switch_returnvoid();
 const string oil_switch_newstring(astree* root);

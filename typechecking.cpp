@@ -9,7 +9,7 @@ bool ERROR_THROWN = false;
 
 
 
-void throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
+attr_bitset throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
             size_t linenr1, size_t offset1, size_t block_nr1, string error) {
 
     char errormessage[1000];
@@ -22,11 +22,12 @@ void throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
 
     fprintf(stderr,errormessage);
     ERROR_THROWN = true;
+    return attr_bitset(0x20000);
 }
 
 
 
-void throw_error(astree* root1, string error) {
+attr_bitset throw_error(astree* root1, string error) {
     const string* lex1 = root1->lexinfo;
     attr_bitset type1 = root1->attributes.to_ulong();
     size_t filenr1 = root1->filenr;
@@ -34,12 +35,12 @@ void throw_error(astree* root1, string error) {
     size_t offset1 = root1->offset;
     size_t block_nr1 = root1->block_nr;
 
-    throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1, error);
+    return throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1, error);
 }
 
 
 
-void throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
+attr_bitset throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
             size_t linenr1, size_t offset1, size_t block_nr1,
             const string* lex2, attr_bitset type2, size_t filenr2,
             size_t linenr2, size_t offset2, size_t block_nr2, string error) {
@@ -56,11 +57,12 @@ void throw_error( const string* lex1, attr_bitset type1, size_t filenr1,
 
     fprintf(stderr,errormessage);
     ERROR_THROWN = true;
+    return attr_bitset(0x20000);
 }
 
 
 
-void throw_error(astree* root1, astree* root2, string error) {
+attr_bitset throw_error(astree* root1, astree* root2, string error) {
     const string* lex1 = root1->lexinfo;
     attr_bitset type1 = root1->attributes.to_ulong();
     size_t filenr1 = root1->filenr;
@@ -76,13 +78,13 @@ void throw_error(astree* root1, astree* root2, string error) {
     size_t block_nr2 = root2->block_nr;
 
 
-    throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1,
+    return throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1,
             lex2, type2, filenr2, linenr2, offset2, block_nr2, error);
 }
 
 
 
-void throw_error(astree* root1, symbol* sym2, string error) {
+attr_bitset throw_error(astree* root1, symbol* sym2, string error) {
     const string* lex1 = root1->lexinfo;
     attr_bitset type1 = root1->attributes.to_ulong();
     size_t filenr1 = root1->filenr;
@@ -98,13 +100,13 @@ void throw_error(astree* root1, symbol* sym2, string error) {
     size_t block_nr2 = sym2->block_nr;
 
 
-    throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1,
+    return throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1,
             lex2, type2, filenr2, linenr2, offset2, block_nr2, error);
 }
 
 
 
-void throw_error(symbol* sym1, symbol* sym2, string error) {
+attr_bitset throw_error(symbol* sym1, symbol* sym2, string error) {
 
     const string* lex1 = sym1->key;
     attr_bitset type1 = sym1->attributes.to_ulong();
@@ -120,6 +122,6 @@ void throw_error(symbol* sym1, symbol* sym2, string error) {
     size_t offset2 = sym2->offset;
     size_t block_nr2 = sym2->block_nr;
 
-    throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1,
+    return throw_error( lex1,type1, filenr1, linenr1, offset1, block_nr1,
             lex2, type2, filenr2, linenr2, offset2, block_nr2, error);
 }

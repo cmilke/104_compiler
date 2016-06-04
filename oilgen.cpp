@@ -78,7 +78,7 @@ void gen_structure( astree* struct_root ) {
             struct_text += string(buffer);
         }
     }
-    struct_text += string("}\n\n");
+    struct_text += string("};\n\n");
     _oil_text += struct_text;
 }
 
@@ -201,39 +201,40 @@ const string oil_invoke_switchboard(astree* root) {
         case TOK_LT:
         case TOK_LE:
         case TOK_GT:
-        case TOK_GE:         return oil_switch_binary(root); break;
+        case TOK_GE:            return oil_switch_binary(root); break;
         case TOK_VARDECL:
-        case '=':            return oil_switch_assignment(root); break;
-        case TOK_IDENT:      return oil_switch_ident(root); break;
-        case TOK_DECLID:     return oil_switch_declid(root); break;
+        case '=':               return oil_switch_assignment(root); break;
+        case TOK_IDENT:         return oil_switch_ident(root); break;
+        case TOK_FIELD:         return oil_switch_field(root); break;
+        case TOK_DECLID:        return oil_switch_declid(root); break;
         case TOK_NULL:
-        case TOK_FALSE:      return "0"; break;
-        case TOK_TRUE:       return "1"; break;
-        case TOK_VOID:       return "void"; break;
+        case TOK_FALSE:         return "0"; break;
+        case TOK_TRUE:          return "1"; break;
+        case TOK_VOID:          return "void"; break;
         case TOK_INTCON:
-        case TOK_CHARCON:    return *(root->lexinfo); break;
-        case TOK_STRINGCON:  return oil_switch_stringcon(); break;
-        case '[':            return oil_switch_array(root); break;
-        case '.':            return oil_switch_selector(root); break; //TODO
-        case TOK_WHILE:      return oil_switch_while(root); break;
-        case TOK_IF:         return oil_switch_if(root); break;
-        case TOK_IFELSE:     return oil_switch_ifelse(root); break;
-        case TOK_NEW:        return oil_switch_new(root); break;
+        case TOK_CHARCON:       return *(root->lexinfo); break;
+        case TOK_STRINGCON:     return oil_switch_stringcon(); break;
+        case '[':               return oil_switch_array(root); break;
+        case '.':               return oil_switch_selector(root); break; //TODO
+        case TOK_WHILE:         return oil_switch_while(root); break;
+        case TOK_IF:            return oil_switch_if(root); break;
+        case TOK_IFELSE:        return oil_switch_ifelse(root); break;
+        case TOK_NEW:           return oil_switch_new(root); break;
         case TOK_NEWSTRING:
-        case TOK_NEWARRAY:   return oil_switch_newarray(root); break;
-        case TOK_BLOCK:      return oil_switch_block(root); break;
-        case TOK_CALL:       return oil_switch_call(root); break;
+        case TOK_NEWARRAY:      return oil_switch_newarray(root); break;
+        case TOK_BLOCK:         return oil_switch_block(root); break;
+        case TOK_CALL:          return oil_switch_call(root); break;
         case '!':
         case TOK_NEG:
-        case TOK_POS:        return oil_switch_unary(root); break;
-        case TOK_ORD:        return oil_switch_ord(root); break;
-        case TOK_CHR:        return oil_switch_chr(root); break;
+        case TOK_POS:           return oil_switch_unary(root); break;
+        case TOK_ORD:           return oil_switch_ord(root); break;
+        case TOK_CHR:           return oil_switch_chr(root); break;
         case TOK_STRUCT:
         case TOK_PROTOTYPE:
-        case TOK_FUNCTION:   return ""; break;
-        case TOK_RETURN:     return oil_switch_return(root); break;
-        case TOK_RETURNVOID: return oil_switch_returnvoid(); break;
-        default:             return oil_compile_error(root); break;
+        case TOK_FUNCTION:      return ""; break;
+        case TOK_RETURN:        return oil_switch_return(root); break;
+        case TOK_RETURNVOID:    return oil_switch_returnvoid(); break;
+        default:                return oil_compile_error(root); break;
     }
 }
 
@@ -248,7 +249,12 @@ const string get_decl( astree* root ) {
     else if ( bits.test(14) ) type_name += "char";
     else if ( bits.test(13) ) type_name += "int";
     else if ( bits.test(11) ) type_name += "char*";
-    else { 
+    else if ( bits.test(6)  ) {
+        type_name += "struct s_";
+        type_name += *(root->children[1]->declid->identifier->key);
+        type_name += "*";
+
+    } else { 
         type_name += "struct s_";
         type_name += *(root->children[0]->lexinfo);
         type_name += "*";
@@ -340,6 +346,16 @@ const string oil_switch_declid( astree* root ) {
 
 
 
+const string oil_switch_field( astree* root ) {
+    const string base = *(root->lexinfo);
+    const string sname = *(root->declid->parent_structure->key);
+
+
+    return ("f_" + sname + "_" + base);
+}
+
+
+
 const string oil_switch_stringcon() {
     return "__s" + to_string(_s_const_reg++);
 }
@@ -365,7 +381,19 @@ const string oil_switch_array( astree* root ) {
 
 
 const string oil_switch_selector( astree* root ) {
-    return "\nU_" + *(root->lexinfo) + "_U\n";
+    astree* instance = root->children[0];
+    astree* field = root->children[1];
+
+    const string istring = oil_invoke_switchboard(instance);
+    const string fstring = oil_invoke_switchboard(field);
+
+    string decl = get_decl(root);
+    string reg = get_reg(root);
+
+    _oil_text += _indent + decl + "* " + reg + " = ";
+    _oil_text += "&(" + istring + "->" + fstring + ");\n";
+
+    return ("(*" + reg + ")");
 }
 
 
@@ -474,7 +502,7 @@ const string oil_switch_block( astree* root ) {
 
 const string oil_switch_call( astree* root ) {
 
-    const string ident = *(root->children[0]->lexinfo);
+    const string ident = "__" + *(root->children[0]->lexinfo);
     string args = "(";
     
     int numkids = root->children.size();

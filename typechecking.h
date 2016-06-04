@@ -18,10 +18,10 @@ enum {                                          ATTR_void,
 
 using attr_bitset = std::bitset<ATTR_bitset_size>;
 
-void throw_error(astree* root1, std::string error);
-void throw_error(astree* root1, astree* root2, std::string error);
-void throw_error(astree* root1, symbol* sym2, std::string error);
-void throw_error(symbol* sym1, symbol* sym2, std::string error);
+attr_bitset throw_error(astree* root1, std::string error);
+attr_bitset throw_error(astree* root1, astree* root2, std::string error);
+attr_bitset throw_error(astree* root1, symbol* sym2, std::string error);
+attr_bitset throw_error(symbol* sym1, symbol* sym2, std::string error);
 
 extern bool ERROR_THROWN;
 
