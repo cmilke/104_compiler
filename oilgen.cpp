@@ -372,10 +372,10 @@ const string oil_switch_array( astree* root ) {
     string reg = get_reg(root);
     string decl = get_decl(root);
 
-    _oil_text += _indent + decl + " " + reg + " = ";
-    _oil_text += a_string + "[" + i_string + "];\n";
+    _oil_text += _indent + decl + "* " + reg + " = ";
+    _oil_text += "&(" + a_string + "[" + i_string + "]);\n";
 
-    return reg;
+    return ( "(*" + reg + ")" );
 }
 
 
