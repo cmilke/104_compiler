@@ -215,7 +215,7 @@ const string oil_invoke_switchboard(astree* root) {
         case TOK_CHARCON:       return *(root->lexinfo); break;
         case TOK_STRINGCON:     return oil_switch_stringcon(); break;
         case '[':               return oil_switch_array(root); break;
-        case '.':               return oil_switch_selector(root); break; //TODO
+        case '.':               return oil_switch_selector(root); break;
         case TOK_WHILE:         return oil_switch_while(root); break;
         case TOK_IF:            return oil_switch_if(root); break;
         case TOK_IFELSE:        return oil_switch_ifelse(root); break;
@@ -506,13 +506,17 @@ const string oil_switch_call( astree* root ) {
     string args = "(";
     
     int numkids = root->children.size();
-    for ( int childI = 1; childI < numkids; childI++ ) {
-        astree* child = root->children[childI];
-        string arg = oil_invoke_switchboard(child);
+    if (numkids > 1) {
+        for ( int childI = 1; childI < numkids; childI++ ) {
+            astree* child = root->children[childI];
+            string arg = oil_invoke_switchboard(child);
 
-        args += arg; 
-        if ( childI < numkids-1 ) args += ",";
-        else args += ")";
+            args += arg; 
+            if ( childI < numkids-1 ) args += ",";
+            else args += ")";
+        }
+    } else {
+        args += ")";
     }
 
     if ( root->attributes.test(16) ) {
@@ -576,7 +580,7 @@ const string oil_switch_return( astree* root ) {
 
 
 const string oil_switch_returnvoid() {
-    _oil_text += _indent + "return void;\n";
+    _oil_text += _indent + "return;\n";
     return "";
 }
 
